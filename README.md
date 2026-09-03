@@ -70,6 +70,17 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 11. Type `exit` in a shell pane: the exit code is reported, and a keystroke
     starts a fresh shell in the same pane.
 
+## Theme
+
+The terminal follows the current Obsidian theme: background, text, accent cursor,
+named colours, monospace font, and selection colour all come from Obsidian's own
+CSS variables, and it switches with the theme with no restart. To adjust it,
+override the emulator's custom properties in a CSS snippet, for example:
+
+```css
+.wterm-pi-host.wterm { --term-font-size: 15px; }
+```
+
 ## Development
 
 ```bash

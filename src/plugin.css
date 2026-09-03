@@ -14,3 +14,51 @@
   height: 100%;
   background: var(--background-primary);
 }
+
+/* The emulator exposes its palette as custom properties, so the terminal can
+   follow the current Obsidian theme and accent colour without any code. Every
+   value has a literal fallback, so an unusual theme that omits a variable
+   degrades to a sensible colour rather than to nothing. */
+.wterm-pi-host.wterm {
+  --term-bg: var(--background-primary, #1e1e1e);
+  --term-fg: var(--text-normal, #d4d4d4);
+  --term-cursor: var(--text-accent, #aeafad);
+
+  --term-font-family: var(--font-monospace, ui-monospace, Menlo, monospace);
+  --term-font-size: var(--font-ui-small, 13px);
+  --term-line-height: 1.3;
+
+  --term-color-1: var(--color-red, #f44747);
+  --term-color-2: var(--color-green, #6a9955);
+  --term-color-3: var(--color-yellow, #d7ba7d);
+  --term-color-4: var(--color-blue, #569cd6);
+  --term-color-5: var(--color-purple, #c586c0);
+  --term-color-6: var(--color-cyan, #4ec9b0);
+  --term-color-7: var(--text-muted, #d4d4d4);
+
+  /* Obsidian has no separate bright palette, so bright repeats normal. The
+     two ends of the scale are what actually need to differ. */
+  --term-color-8: var(--text-faint, #808080);
+  --term-color-9: var(--color-red, #f44747);
+  --term-color-10: var(--color-green, #6a9955);
+  --term-color-11: var(--color-orange, #d7ba7d);
+  --term-color-12: var(--color-blue, #569cd6);
+  --term-color-13: var(--color-pink, #c586c0);
+  --term-color-14: var(--color-cyan, #4ec9b0);
+  --term-color-15: var(--text-normal, #ffffff);
+}
+
+/* ANSI black is the one colour that cannot follow a scale which flips with the
+   theme: on a dark background it must stay near the background, on a light one
+   it must be genuinely dark. */
+.theme-dark .wterm-pi-host.wterm {
+  --term-color-0: var(--color-base-25, #1e1e1e);
+}
+
+.theme-light .wterm-pi-host.wterm {
+  --term-color-0: var(--color-base-100, #000000);
+}
+
+.wterm-pi-host.wterm ::selection {
+  background: var(--text-selection, rgba(86, 156, 214, 0.3));
+}
