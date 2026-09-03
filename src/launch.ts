@@ -20,18 +20,19 @@ export const PATH_PREPEND = [
 ];
 
 /**
+ * `--approve` trusts project-local files for the run, so the vault is trusted
+ * every time and the trust prompt never appears. Nothing is saved, because
+ * nothing needs to be. Its opposite, `--no-approve`, was tried first and made
+ * `/trust` look broken: it ignores project-local files whatever decision was
+ * saved, so a decision saved in one session was overridden by the next launch.
+ *
  * `--no-skills` disables skill loading outright, which the private config
  * directory alone cannot do: skills are also discovered from `~/.agents/skills`
  * and from `.agents/skills` in the working directory and its parents, none of
- * which move with `PI_CODING_AGENT_DIR`.
- *
- * `--no-approve` is deliberately not passed. It ignores project-local files for
- * the run regardless of any saved decision, which made `/trust` appear broken:
- * the decision was saved and then overridden on the next launch. Trust is left
- * to pi, and the decision is written to the private config directory rather than
- * the user's own.
+ * which move with `PI_CODING_AGENT_DIR`. It still applies to a trusted project,
+ * so trusting the vault does not bring skills back.
  */
-export const PI_ARGS = ["--no-skills"];
+export const PI_ARGS = ["--approve", "--no-skills"];
 
 import {
   API_KEY_ENV,

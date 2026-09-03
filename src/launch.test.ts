@@ -40,10 +40,17 @@ describe("resolveLaunch — command and arguments", () => {
     expect(spec.command.startsWith("/")).toBe(true);
   });
 
-  it("leaves project trust to pi, so a saved decision is honoured", () => {
-    // --no-approve would override a decision saved by /trust on the next launch.
+  it("trusts the vault on every launch, so the trust prompt never appears", () => {
+    expect(resolve({}).args).toContain("--approve");
+    expect(resolve({ notePath: "a.md" }).args).toContain("--approve");
+  });
+
+  it("never passes the opposite flag, which would override a saved decision", () => {
     expect(resolve({}).args).not.toContain("--no-approve");
-    expect(resolve({ notePath: "a.md" }).args).not.toContain("--no-approve");
+  });
+
+  it("keeps skills off even though the project is trusted", () => {
+    expect(resolve({}).args).toContain("--no-skills");
   });
 
   it("loads no skills on every launch", () => {
