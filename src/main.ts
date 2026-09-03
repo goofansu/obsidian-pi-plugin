@@ -120,33 +120,39 @@ export default class PiPlugin extends Plugin {
     return this.app.workspace.getLeavesOfType(TERMINAL_VIEW_TYPE)[0] ?? null;
   }
 
-  /** Puts a pane in the sidebar if there is not one, without starting it. */
-  private async ensurePane(): Promise<void> {
-    if (this.piLeaf()) return;
+  /**
+   * Puts a pane in the sidebar if there is not one, without revealing it, so
+   * the tab is there to click but nothing has started.
+   *
+   * `getRightLeaf(false)` joins the sidebar's existing tab strip; splitting
+   * would stack a separate group instead, which is why a pane opened after the
+   * old one was closed did not appear alongside the other tabs.
+   */
+  private async ensurePane(): Promise<WorkspaceLeaf | null> {
+    const existing = this.piLeaf();
+    if (existing) return existing;
+
     const leaf = this.app.workspace.getRightLeaf(false);
-    await leaf?.setViewState({ type: TERMINAL_VIEW_TYPE });
+    if (!leaf) return null;
+
+    await leaf.setViewState({ type: TERMINAL_VIEW_TYPE });
+    return leaf;
   }
 
+  /** Brings Pi up and gives it the keyboard, creating the pane if needed. */
   private async openPi(): Promise<void> {
-    const leaf = this.rightSidebarLeaf();
+    const leaf = await this.ensurePane();
     if (!leaf) {
       new Notice("Pi: could not open a pane for Pi");
       return;
     }
 
-    await leaf.setViewState({ type: TERMINAL_VIEW_TYPE, active: true });
+    // Revealing activates the leaf, which is what starts Pi.
     await this.app.workspace.revealLeaf(leaf);
 
     // After revealing, not before: revealing moves focus to the pane container.
     const { view } = leaf;
     if (view instanceof TerminalView) view.focusTerminal();
-  }
-
-  /** There is one Pi session, so a sidebar leaf is only ever created once. */
-  private rightSidebarLeaf(): WorkspaceLeaf | null {
-    return (
-      this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf("tab")
-    );
   }
 }
 
