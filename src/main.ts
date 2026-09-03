@@ -5,6 +5,7 @@ import {
   Setting,
   type WorkspaceLeaf,
 } from "obsidian";
+import { PATH_PREPEND } from "./launch.js";
 import {
   DEFAULT_SETTINGS,
   MODELS,
@@ -177,6 +178,23 @@ class PiSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.apiKey)
           .onChange(async (value) => {
             this.plugin.settings.apiKey = value.trim();
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(this.containerEl)
+      .setName("Extra PATH directories")
+      .setDesc(
+        `Optional. Searched before the ones found when the plugin was built (${PATH_PREPEND.join(", ")}). One per line, or separated by colons; absolute paths only. Takes effect on the next session.`,
+      )
+      .addTextArea((text) => {
+        text.inputEl.rows = 3;
+        text.inputEl.spellcheck = false;
+        text
+          .setPlaceholder("/opt/homebrew/bin")
+          .setValue(this.plugin.settings.pathDirs)
+          .onChange(async (value) => {
+            this.plugin.settings.pathDirs = value;
             await this.plugin.saveSettings();
           });
       });

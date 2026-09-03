@@ -29,6 +29,9 @@ Settings → Community plugins → Pi:
 - **DeepSeek API key** — required. A pane opened without one says so and waits.
 - **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
   sessions started from then on; both can be cycled inside a running session.
+- **Extra PATH directories** — optional. Searched before the directories found
+  when the plugin was built, so a wrong one can be corrected without rebuilding.
+  One per line or colon-separated; absolute paths only.
 
 Pi has a native `deepseek` provider, so nothing else needs configuring.
 

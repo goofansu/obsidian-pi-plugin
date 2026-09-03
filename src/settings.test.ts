@@ -5,6 +5,7 @@ import {
   MODELS,
   modelCycleList,
   modelPattern,
+  parsePathDirs,
   parseSettings,
 } from "./settings.js";
 
@@ -58,6 +59,7 @@ describe("parseSettings is total", () => {
     ).toEqual({
       apiKey: "sk-abc",
       model: "deepseek-v4-pro",
+      pathDirs: "",
     });
   });
 
@@ -79,5 +81,61 @@ describe("parseSettings is total", () => {
 describe("the environment variable pi reads", () => {
   it("is the one pi's own catalog names for deepseek", () => {
     expect(API_KEY_ENV).toBe("DEEPSEEK_API_KEY");
+  });
+});
+
+describe("extra PATH directories", () => {
+  it("accepts the colon-separated form a terminal uses", () => {
+    expect(parsePathDirs("/opt/bin:/usr/local/bin")).toEqual([
+      "/opt/bin",
+      "/usr/local/bin",
+    ]);
+  });
+
+  it("accepts one per line, which is what a text box invites", () => {
+    expect(parsePathDirs("/opt/bin\n/usr/local/bin\n")).toEqual([
+      "/opt/bin",
+      "/usr/local/bin",
+    ]);
+  });
+
+  it("trims stray whitespace around each entry", () => {
+    expect(parsePathDirs("  /opt/bin  :\t/usr/local/bin ")).toEqual([
+      "/opt/bin",
+      "/usr/local/bin",
+    ]);
+  });
+
+  it("drops blank entries rather than putting an empty path on PATH", () => {
+    expect(parsePathDirs("/opt/bin::\n\n/usr/local/bin")).toEqual([
+      "/opt/bin",
+      "/usr/local/bin",
+    ]);
+  });
+
+  it("keeps only absolute paths, since a relative one would depend on the vault", () => {
+    expect(parsePathDirs("/opt/bin:bin:../bin:~/bin")).toEqual(["/opt/bin"]);
+  });
+
+  it("removes a repeated directory, keeping the first", () => {
+    expect(parsePathDirs("/opt/bin:/usr/bin:/opt/bin")).toEqual([
+      "/opt/bin",
+      "/usr/bin",
+    ]);
+  });
+
+  it("is empty for nothing, whitespace, or a non-string", () => {
+    for (const input of ["", "   \n ", undefined, null, 42, []]) {
+      expect(parsePathDirs(input)).toEqual([]);
+    }
+  });
+
+  it("defaults to none, so the built-in directories stand alone", () => {
+    expect(DEFAULT_SETTINGS.pathDirs).toBe("");
+  });
+
+  it("is carried through parseSettings", () => {
+    expect(parseSettings({ pathDirs: "/opt/bin" }).pathDirs).toBe("/opt/bin");
+    expect(parseSettings({ pathDirs: 42 }).pathDirs).toBe("");
   });
 });

@@ -65,6 +65,7 @@ import {
   API_KEY_ENV,
   modelCycleList,
   modelPattern,
+  parsePathDirs,
   type Settings,
 } from "./settings.js";
 
@@ -109,6 +110,10 @@ export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
   };
 }
 
+function dedupe(dirs: string[]): string[] {
+  return [...new Set(dirs)];
+}
+
 function resolveEnv(
   processEnv: NodeJS.ProcessEnv,
   agentDir: string,
@@ -128,14 +133,14 @@ function resolveEnv(
   }
 
   const inherited = env.PATH ? env.PATH.split(":").filter(Boolean) : [];
+  // Directories set in settings lead, so a wrong value discovered at build time
+  // can be corrected without rebuilding.
+  const leading = [...parsePathDirs(settings.pathDirs), ...PATH_PREPEND];
   const dirs = [
-    ...PATH_PREPEND,
-    ...inherited.filter((dir) => !PATH_PREPEND.includes(dir)),
+    ...leading,
+    ...inherited.filter((dir) => !leading.includes(dir)),
   ];
-  env.PATH = [
-    ...dirs,
-    ...PATH_APPEND.filter((dir) => !dirs.includes(dir)),
-  ].join(":");
+  env.PATH = dedupe([...dirs, ...PATH_APPEND]).join(":");
 
   env.TERM = "xterm-256color";
   env.COLORTERM = "truecolor";

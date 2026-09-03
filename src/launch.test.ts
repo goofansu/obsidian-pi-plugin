@@ -14,7 +14,11 @@ const VAULT = "/Users/james/Vault";
 const AGENT_DIR =
   "/Users/james/Vault/.obsidian/plugins/obsidian-pi-plugin/pi-agent";
 
-const SETTINGS: Settings = { apiKey: "sk-test", model: "deepseek-v4-flash" };
+const SETTINGS: Settings = {
+  apiKey: "sk-test",
+  model: "deepseek-v4-flash",
+  pathDirs: "",
+};
 
 const resolve = (
   processEnv: NodeJS.ProcessEnv = {},
@@ -70,7 +74,10 @@ describe("resolveLaunch — command and arguments", () => {
   );
 
   it("selects the configured model, and offers both for cycling", () => {
-    const args = resolve({}, { apiKey: "sk", model: "deepseek-v4-pro" }).args;
+    const args = resolve(
+      {},
+      { apiKey: "sk", model: "deepseek-v4-pro", pathDirs: "" },
+    ).args;
 
     expect(args[args.indexOf("--model") + 1]).toBe("deepseek/deepseek-v4-pro");
     expect(args[args.indexOf("--models") + 1]).toBe(
@@ -87,14 +94,18 @@ describe("resolveLaunch — command and arguments", () => {
 describe("resolveLaunch — the api key", () => {
   it("passes the configured key in the variable pi reads", () => {
     expect(
-      resolve({}, { apiKey: "sk-live", model: "deepseek-v4-flash" }).env[
-        API_KEY_ENV
-      ],
+      resolve(
+        {},
+        { apiKey: "sk-live", model: "deepseek-v4-flash", pathDirs: "" },
+      ).env[API_KEY_ENV],
     ).toBe("sk-live");
   });
 
   it("never puts the key on the command line", () => {
-    const spec = resolve({}, { apiKey: "sk-live", model: "deepseek-v4-flash" });
+    const spec = resolve(
+      {},
+      { apiKey: "sk-live", model: "deepseek-v4-flash", pathDirs: "" },
+    );
 
     expect(spec.args.join(" ")).not.toContain("sk-live");
   });
@@ -114,10 +125,7 @@ describe("resolveLaunch — the api key", () => {
   it("prefers the configured key over an inherited one", () => {
     const spec = resolve(
       { [API_KEY_ENV]: "sk-ambient" },
-      {
-        apiKey: "sk-configured",
-        model: "deepseek-v4-flash",
-      },
+      { apiKey: "sk-configured", model: "deepseek-v4-flash", pathDirs: "" },
     );
 
     expect(spec.env[API_KEY_ENV]).toBe("sk-configured");
@@ -176,6 +184,38 @@ describe("resolveLaunch — the external editor", () => {
 
     expect(spec.env.EDITOR).toBe(EDITOR_COMMAND);
     expect(spec.env.VISUAL).toBe(EDITOR_COMMAND);
+  });
+});
+
+describe("directories set in settings", () => {
+  const withDirs = (pathDirs: string) =>
+    resolve({ PATH: "/usr/bin" }, { ...SETTINGS, pathDirs });
+
+  it("lead the PATH, ahead of the ones found at build time", () => {
+    const dirs = withDirs("/opt/mine/bin").env.PATH.split(":");
+
+    expect(dirs[0]).toBe("/opt/mine/bin");
+    expect(dirs.indexOf("/opt/mine/bin")).toBeLessThan(
+      dirs.indexOf(PATH_PREPEND[0]),
+    );
+  });
+
+  it("accept several, in the order given", () => {
+    const dirs = withDirs("/first/bin:/second/bin").env.PATH.split(":");
+
+    expect(dirs.slice(0, 2)).toEqual(["/first/bin", "/second/bin"]);
+  });
+
+  it("change nothing when left empty", () => {
+    expect(withDirs("").env.PATH).toBe(
+      resolve({ PATH: "/usr/bin" }, SETTINGS).env.PATH,
+    );
+  });
+
+  it("are not repeated if they name a directory already there", () => {
+    const dirs = withDirs(PATH_PREPEND[0]).env.PATH.split(":");
+
+    expect(dirs.filter((d) => d === PATH_PREPEND[0])).toHaveLength(1);
   });
 });
 
