@@ -51,6 +51,10 @@ export default class WTermPiPlugin extends Plugin {
       state: { ...serializeLaunch(launch), autostart: true },
     });
     await this.app.workspace.revealLeaf(leaf);
+
+    // After revealing, not before: revealing moves focus to the pane container.
+    const { view } = leaf;
+    if (view instanceof TerminalView) view.focusTerminal();
   }
 
   /** A fresh sidebar leaf, so a shell pane and a Pi pane coexist as tabs. */

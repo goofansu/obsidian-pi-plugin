@@ -74,6 +74,15 @@ export class TerminalView extends ItemView {
     // A click is the other way a waiting pane is activated.
     this.registerDomEvent(host, "mousedown", () => {
       if (!this.started) this.start();
+      this.focusTerminal();
+    });
+
+    // Obsidian focuses the pane's own container when the leaf is revealed or
+    // its tab is selected, which would otherwise leave the terminal's hidden
+    // textarea unfocused and the keyboard dead. Hand focus back to it.
+    this.registerDomEvent(this.contentEl, "focusin", (event) => {
+      if (event.target instanceof HTMLTextAreaElement) return;
+      this.focusTerminal();
     });
 
     if (this.autostart) {
@@ -85,6 +94,11 @@ export class TerminalView extends ItemView {
 
   override async onClose(): Promise<void> {
     this.dispose();
+  }
+
+  /** Gives the keyboard to the terminal. Safe to call before it exists. */
+  focusTerminal(): void {
+    this.term?.focus();
   }
 
   /** Called by the plugin on unload, so no process outlives the plugin. */
