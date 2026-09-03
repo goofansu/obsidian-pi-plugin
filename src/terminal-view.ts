@@ -63,7 +63,14 @@ export class TerminalView extends ItemView {
   override async onOpen(): Promise<void> {
     if (this.restored) {
       // A pane left open when Obsidian was quit is not a request to start an
-      // agent now. It closes once the layout settles, having spawned nothing.
+      // agent now, so it closes having built and spawned nothing.
+      //
+      // Detached in a microtask rather than on layout-ready: waiting for the
+      // layout left the empty pane on screen long enough to see it appear and
+      // vanish. The layout-ready call stays as a fallback for the case where
+      // the leaf is not yet attached when the microtask runs; detaching twice
+      // is harmless.
+      queueMicrotask(() => this.leaf.detach());
       this.app.workspace.onLayoutReady(() => this.leaf.detach());
       return;
     }
