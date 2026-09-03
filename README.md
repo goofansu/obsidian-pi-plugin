@@ -14,11 +14,8 @@ preceded it is in `docs/research.md`.
 | **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi |
 | **Pi: Add selection to thread** | `Cmd+Shift+>` | Puts the selected note text into Pi's editor and focuses it. Inserted, never submitted — add your question and press enter yourself. |
 
-There is also a terminal icon in the left ribbon, which does the same as
-**Toggle focus**.
-
-Any of the three starts Pi if it is not running, so there is no separate command
-to open it. Close the pane the way you close any Obsidian pane, or quit Pi.
+Either command starts Pi if it is not running, so there is no separate command
+to open it. If a pane is already in the sidebar, selecting its tab starts it too. Close the pane the way you close any Obsidian pane, or quit Pi.
 
 One session, in the right sidebar, running in your vault. There is no shell
 command and no per-note command: Pi reads any note it needs with its own tools.
