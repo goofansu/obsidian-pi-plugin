@@ -110,7 +110,9 @@ Pi is started with its own `light` or `dark` theme to match Obsidian's current
 mode. Pi normally chooses by asking the terminal for its background colour; this
 emulator does not answer that, so without being told it would always assume dark.
 The mode is read when a session starts, so switching Obsidian's theme applies to
-panes opened afterwards, not to running ones.
+panes opened afterwards, not to running ones. That limit is Pi's: it detects
+appearance only at startup, and rewriting its theme file mid-session was measured
+to have no effect, even after `/reload`. Restart a pane to change its theme.
 
 The sixteen ANSI colours are handled separately by the stylesheet. The palette
 there is Pi's own, copied from its built-in `dark.json` and `light.json`
