@@ -4,7 +4,8 @@ A terminal in Obsidian's right sidebar, and a one-command way to hand the note
 you are reading to the Pi coding agent.
 
 Personal, single-machine plugin: Apple Silicon macOS, Obsidian 1.13.7. Not
-distributed. The spec lives in `.scratch/spec.md`.
+distributed. The spec lives in `.scratch/spec.md`; the original research that
+preceded it is in `docs/research.md`.
 
 ## Commands
 
