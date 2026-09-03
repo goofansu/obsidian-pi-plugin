@@ -164,7 +164,7 @@ Pin wterm initially because it is still a young package. Bundle `@wterm/dom` int
   "version": "0.0.1",
   "minAppVersion": "1.13.7",
   "description": "A local wterm terminal for Pi.",
-  "author": "James",
+  "author": "Yejun Su",
   "isDesktopOnly": true
 }
 ```
