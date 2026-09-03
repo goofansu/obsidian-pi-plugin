@@ -81,6 +81,8 @@ export class TerminalView extends ItemView {
       this.focusTerminal();
     });
 
+    this.writeIdleTip();
+
     // A pane is never started by existing. It starts when it is activated —
     // by selecting its tab, or by a command revealing it — which covers both
     // the pane that sits waiting in the sidebar and the one a command opens.
@@ -163,8 +165,9 @@ export class TerminalView extends ItemView {
 
     if (exitCode === 0) {
       // Clear the screen and the scrollback, so nothing of the finished
-      // session is left behind.
+      // session is left behind, and offer the way back in.
       this.term?.write("\x1b[2J\x1b[3J\x1b[H");
+      this.writeIdleTip();
       return;
     }
 
@@ -216,6 +219,29 @@ export class TerminalView extends ItemView {
       return;
     }
     this.process?.write(data);
+  }
+
+  /**
+   * An empty terminal says nothing about why it is empty. This is the only
+   * text the plugin puts on screen that is not an error, so it stays short.
+   *
+   * It names no shortcut: the binding is the user's to change and is not
+   * readable through Obsidian's public API, so a tip mentioning one would go
+   * quietly wrong after a rebind. Clicking always works.
+   */
+  private writeIdleTip(): void {
+    const dim = "\x1b[2m";
+    const off = "\x1b[0m";
+
+    this.term?.write(
+      [
+        "",
+        `  ${dim}Pi is ready when you are.${off}`,
+        "",
+        `  ${dim}Click here to begin.${off}`,
+        "",
+      ].join("\r\n"),
+    );
   }
 
   private dim(message: string): void {
