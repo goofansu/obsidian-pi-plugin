@@ -6,7 +6,7 @@
  */
 
 /** Absolute so the launch does not depend on Obsidian's GUI `PATH`. */
-export const SHELL_COMMAND = "/bin/zsh";
+export const SHELL_COMMAND = "/run/current-system/sw/bin/fish";
 export const SHELL_ARGS = ["-l"];
 export const PI_COMMAND = "/Users/james/.npm-global/bin/pi";
 

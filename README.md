@@ -10,7 +10,7 @@ distributed. The spec lives in `.scratch/obsidian-wterm-spec.md`.
 
 | Command | What it runs |
 | --- | --- |
-| **Open terminal** | `/bin/zsh -l` in the vault root |
+| **Open terminal** | `fish -l` in the vault root |
 | **Open Pi for current note** | Pi in the vault root, with the active note as an `@file` argument |
 
 Both open a new tab in the right sidebar, expanding it if collapsed. Panes can be

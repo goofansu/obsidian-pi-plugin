@@ -18,10 +18,11 @@ const resolve = (launch: Launch, processEnv: NodeJS.ProcessEnv = {}) =>
   resolveLaunch(launch, { vaultRoot: VAULT, processEnv });
 
 describe("resolveLaunch — shell", () => {
-  it("runs zsh by absolute path as a login shell", () => {
+  it("runs fish by absolute path as a login shell", () => {
     const spec = resolve({ kind: "shell" });
 
     expect(spec.command).toBe(SHELL_COMMAND);
+    expect(spec.command.endsWith("/fish")).toBe(true);
     expect(spec.command.startsWith("/")).toBe(true);
     expect(spec.args).toEqual(["-l"]);
   });
