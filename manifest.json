@@ -1,0 +1,9 @@
+{
+  "id": "wterm-pi",
+  "name": "wterm Pi",
+  "version": "0.0.1",
+  "minAppVersion": "1.13.7",
+  "description": "A local wterm terminal for Pi, in the Obsidian sidebar.",
+  "author": "James",
+  "isDesktopOnly": true
+}

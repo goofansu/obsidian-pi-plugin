@@ -1,0 +1,27 @@
+{
+  "name": "obsidian-wterm-pi",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A local wterm terminal for Pi, inside Obsidian.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "postinstall": "chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper",
+    "install-to": "node scripts/install-to-vault.mjs"
+  },
+  "dependencies": {
+    "@wterm/dom": "0.4.1",
+    "node-pty": "1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "builtin-modules": "^5.3.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "latest",
+    "typescript": "^5.8.0",
+    "vitest": "^3.0.0"
+  }
+}
