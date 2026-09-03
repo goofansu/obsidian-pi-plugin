@@ -14,7 +14,7 @@ import {
 } from "./settings.js";
 import { TERMINAL_VIEW_TYPE, TerminalView } from "./terminal-view.js";
 
-export default class WTermPiPlugin extends Plugin {
+export default class PiPlugin extends Plugin {
   private views = new Set<TerminalView>();
   override settings: Settings = { ...DEFAULT_SETTINGS };
 
@@ -36,26 +36,20 @@ export default class WTermPiPlugin extends Plugin {
       return view;
     });
 
-    this.addSettingTab(new WTermPiSettingTab(this));
+    this.addSettingTab(new PiSettingTab(this));
 
     this.addCommand({
-      id: "toggle-pi",
-      name: "Show or hide Pi",
-      callback: () => void this.togglePi(),
-    });
-
-    this.addCommand({
-      id: "send-selection-to-pi",
-      name: "Send selected text to Pi",
-      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "." }],
-      callback: () => void this.sendSelectionToPi(),
-    });
-
-    this.addCommand({
-      id: "focus-pi",
-      name: "Jump between your note and Pi",
+      id: "toggle-focus",
+      name: "Toggle focus",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "/" }],
-      callback: () => void this.jumpBetweenNoteAndPi(),
+      callback: () => void this.toggleFocus(),
+    });
+
+    this.addCommand({
+      id: "add-selection-to-thread",
+      name: "Add selection to thread",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "." }],
+      callback: () => void this.addSelectionToThread(),
     });
   }
 
@@ -68,21 +62,12 @@ export default class WTermPiPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
-  /** Opens Pi if it is closed, closes it if it is open. */
-  private async togglePi(): Promise<void> {
-    const existing = this.piLeaf();
-    if (existing) {
-      existing.detach();
-      return;
-    }
-    await this.openPi();
-  }
-
   /**
    * One key for both directions: bring Pi up and start typing to it, or, when
-   * it already has the keyboard, hand the keyboard back to the note.
+   * it already has the keyboard, hand the keyboard back to the note. Opens Pi
+   * first if it is not running.
    */
-  private async jumpBetweenNoteAndPi(): Promise<void> {
+  private async toggleFocus(): Promise<void> {
     const leaf = this.piLeaf();
     if (!leaf) {
       await this.openPi();
@@ -103,7 +88,7 @@ export default class WTermPiPlugin extends Plugin {
    * The selection is read from the last active editor rather than from whatever
    * has focus, so this works while the keyboard is already in Pi.
    */
-  private async sendSelectionToPi(): Promise<void> {
+  private async addSelectionToThread(): Promise<void> {
     const selection =
       this.app.workspace.activeEditor?.editor?.getSelection() ?? "";
     if (selection.trim() === "") {
@@ -157,8 +142,8 @@ export default class WTermPiPlugin extends Plugin {
   }
 }
 
-class WTermPiSettingTab extends PluginSettingTab {
-  constructor(private readonly plugin: WTermPiPlugin) {
+class PiSettingTab extends PluginSettingTab {
+  constructor(private readonly plugin: PiPlugin) {
     super(plugin.app, plugin);
   }
 

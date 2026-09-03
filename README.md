@@ -10,9 +10,11 @@ distributed. The spec lives in `.scratch/spec.md`.
 
 | Command | Default key | What it does |
 | --- | --- | --- |
-| **Show or hide Pi** | — | Opens the Pi pane, or closes it if it is open |
-| **Jump between your note and Pi** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi. Opens Pi if it is not open. |
-| **Send selected text to Pi** | `Cmd+Shift+>` | Puts the selected note text into Pi's editor and focuses it. Inserted, never submitted — add your question and press enter yourself. |
+| **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi |
+| **Pi: Add selection to thread** | `Cmd+Shift+>` | Puts the selected note text into Pi's editor and focuses it. Inserted, never submitted — add your question and press enter yourself. |
+
+Either command starts Pi if it is not running, so there is no separate command
+to open it. Close the pane the way you close any Obsidian pane, or quit Pi.
 
 One session, in the right sidebar, running in your vault. There is no shell
 command and no per-note command: Pi reads any note it needs with its own tools.
