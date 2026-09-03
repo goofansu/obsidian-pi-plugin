@@ -16,11 +16,15 @@ export default class WTermPiPlugin extends Plugin {
     this.settings = parseSettings(await this.loadData());
 
     this.registerView(TERMINAL_VIEW_TYPE, (leaf) => {
+      // Anything built before the layout is ready came from the saved
+      // workspace rather than from a command.
+      const restored = !this.app.workspace.layoutReady;
       const view = new TerminalView(
         leaf,
         this.manifest.dir,
         () => this.settings,
-        (v) => this.views.delete(v),
+        restored,
+        (v: TerminalView) => this.views.delete(v),
       );
       this.views.add(view);
       return view;

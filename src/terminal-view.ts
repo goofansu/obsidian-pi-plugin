@@ -33,6 +33,11 @@ export class TerminalView extends ItemView {
     private readonly pluginDir: string | undefined,
     /** Read at spawn time, so a key added in settings applies to the next start. */
     private readonly readSettings: () => Settings,
+    /**
+     * True when Obsidian rebuilt this pane from the saved workspace layout
+     * rather than a command opening it.
+     */
+    private readonly restored: boolean,
     private readonly onDispose: (view: TerminalView) => void,
   ) {
     super(leaf);
@@ -56,6 +61,13 @@ export class TerminalView extends ItemView {
   }
 
   override async onOpen(): Promise<void> {
+    if (this.restored) {
+      // A pane left open when Obsidian was quit is not a request to start an
+      // agent now. It closes once the layout settles, having spawned nothing.
+      this.app.workspace.onLayoutReady(() => this.leaf.detach());
+      return;
+    }
+
     const host = this.contentEl.createDiv({ cls: "wterm-pi-host" });
     this.host = host;
 
