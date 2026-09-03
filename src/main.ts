@@ -38,6 +38,10 @@ export default class PiPlugin extends Plugin {
 
     this.addSettingTab(new PiSettingTab(this));
 
+    // A permanent way in, so Pi can be reached without remembering a key.
+    // Same behaviour as the toggle: it starts Pi if it is not running.
+    this.addRibbonIcon("terminal", "Pi", () => void this.toggleFocus());
+
     this.addCommand({
       id: "toggle-focus",
       name: "Toggle focus",
