@@ -19,6 +19,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The body lists the commits since the previous tag, which needs more
+          # history than the single commit a default checkout fetches.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -38,34 +42,29 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: npm run package -- --tag "$TAG"
 
-      - name: Write the release notes
+      # What changed since the previous tag, so no two releases carry the same
+      # notes. Taken from the commits rather than from GitHub's own generator,
+      # which lists merged pull requests: this repository is committed to
+      # directly, so the generator would have nothing to say.
+      - name: Build the release body
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          cat > release-notes.md <<'EOF'
-          A macOS plugin folder, ready to unzip. It carries node-pty's macOS
-          pseudo-terminal addon, which Obsidian's own plugin installer would
-          not deliver, so there is nothing to build and nothing to clone.
+          awk '/^## /{keep = ($0 == "## Install")} keep' README.md > body.md
+          test -s body.md
 
-          ## Install
-
-          1. Download the zip below.
-          2. Unzip it into `<Vault>/.obsidian/plugins/`, so that the plugin
-             lands at `<Vault>/.obsidian/plugins/obsidian-pi-plugin/`.
-          3. Clear the quarantine flag your browser attached to the
-             download. Harmless if there is none, and it saves a puzzling
-             `Could not load node-pty` if macOS decides to enforce it against
-             the unsigned addon:
-
-                 xattr -dr com.apple.quarantine "<Vault>/.obsidian/plugins/obsidian-pi-plugin"
-
-          4. In Obsidian: Settings → Community plugins → turn them on if they
-             are off, then enable **Pi**.
-          5. In Settings → Community plugins → Pi, fill in **Extra PATH
-             directories** so the plugin can find `pi` and `node`, and the
-             **DeepSeek API key**.
-
-          Requires macOS, Obsidian 1.13.7 or newer, and `pi` on disk — Pi
-          itself is not part of this archive.
-          EOF
+          previous=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+          if [ -n "$previous" ]; then
+            {
+              printf '## Changes since %s\n\n' "$previous"
+              git log --reverse --pretty='- %s' "$previous..$TAG"
+              printf '\nFull changelog: https://github.com/%s/compare/%s...%s\n' \
+                "$REPO" "$previous" "$TAG"
+            } >> body.md
+          else
+            printf 'First release.\n' >> body.md
+          fi
 
       - name: Publish the release
         env:
@@ -74,5 +73,5 @@ jobs:
         run: |
           gh release create "$TAG" dist/*.zip \
             --title "$TAG" \
-            --notes-file release-notes.md \
+            --notes-file body.md \
             --verify-tag
