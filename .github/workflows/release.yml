@@ -18,13 +18,13 @@ jobs:
     # whichever machine GitHub hands out produces the same archive.
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # The body lists the commits since the previous tag, which needs more
           # history than the single commit a default checkout fetches.
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -51,9 +51,6 @@ jobs:
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          awk '/^## /{keep = ($0 == "## Install")} keep' README.md > body.md
-          test -s body.md
-
           previous=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
           if [ -n "$previous" ]; then
             {
@@ -61,9 +58,9 @@ jobs:
               git log --reverse --pretty='- %s' "$previous..$TAG"
               printf '\nFull changelog: https://github.com/%s/compare/%s...%s\n' \
                 "$REPO" "$previous" "$TAG"
-            } >> body.md
+            } > body.md
           else
-            printf 'First release.\n' >> body.md
+            printf 'First release.\n' > body.md
           fi
 
       - name: Publish the release

@@ -146,12 +146,9 @@ one mistake that would otherwise surface only when a session refuses to start.
 
 ### What the release page says
 
-The body is built in the workflow, per tag. The **Install** section of the
-README is taken verbatim, by the heading — renaming it fails the run rather
-than publishing a release that explains nothing — and the commit subjects since
-the previous tag are appended, with a link comparing the two. So the install
-steps have one home, the release page and the repository cannot drift apart,
-and no two releases carry the same notes.
+The body is what changed, and nothing else: the commit subjects since the
+previous tag, with a link comparing the two. Installing is the README's job,
+and the release page does not repeat it.
 
 The commits are read with `git log` rather than left to GitHub's own note
 generator, which lists merged pull requests: this repository is committed to
