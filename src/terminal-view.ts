@@ -61,20 +61,6 @@ export class TerminalView extends ItemView {
   }
 
   override async onOpen(): Promise<void> {
-    if (this.restored) {
-      // A pane left open when Obsidian was quit is not a request to start an
-      // agent now, so it closes having built and spawned nothing.
-      //
-      // Detached in a microtask rather than on layout-ready: waiting for the
-      // layout left the empty pane on screen long enough to see it appear and
-      // vanish. The layout-ready call stays as a fallback for the case where
-      // the leaf is not yet attached when the microtask runs; detaching twice
-      // is harmless.
-      queueMicrotask(() => this.leaf.detach());
-      this.app.workspace.onLayoutReady(() => this.leaf.detach());
-      return;
-    }
-
     const host = this.contentEl.createDiv({ cls: "pi-terminal" });
     this.host = host;
 
@@ -100,8 +86,25 @@ export class TerminalView extends ItemView {
       this.focusTerminal();
     });
 
-    // Opening a pane means wanting Pi, whether the command opened it or
-    // Obsidian restored it, so there is nothing to wait for.
+    if (this.restored) {
+      // A pane rebuilt from the saved layout keeps its place in the sidebar —
+      // the tab is the way back to Pi — but starts nothing until it is asked
+      // for. Opening a vault should not launch an agent on its own.
+      //
+      // Registered only once the layout has settled, so the restore itself
+      // cannot look like the user selecting the tab.
+      this.app.workspace.onLayoutReady(() => {
+        this.registerEvent(
+          this.app.workspace.on("active-leaf-change", (leaf) => {
+            if (leaf === this.leaf && !this.started) this.start();
+          }),
+        );
+      });
+      return;
+    }
+
+    // A pane opened by a command, the ribbon, or the hotkey is a request for
+    // Pi now.
     this.start();
   }
 

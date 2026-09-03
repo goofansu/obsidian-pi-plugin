@@ -72,9 +72,10 @@ pane kills its process.
 Quitting Pi closes the pane. If Pi exits with an error the pane stays open
 instead, showing the exit code, and a keystroke restarts it.
 
-Pi's pane is not restored when you reopen your vault. Obsidian saves it in the
-workspace layout, but the plugin closes it as the layout settles, without
-starting anything — opening a vault should show your notes, not launch an agent.
+If Pi's pane was open when you quit, it comes back with your vault — its tab
+sits in the right sidebar as a way back in — but nothing runs until you select
+it. The pane is empty until then. Opening a vault should not launch an agent on
+its own.
 
 ## Build and install
 
@@ -123,8 +124,8 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 8. Ask Pi to read a second note in the vault.
 9. Drag a live pane into the main editor area: the session continues.
 10. Close a pane mid-response: `ps` shows no orphaned process.
-11. Restart Obsidian with Pi open: the pane does not come back, and no `pi`
-    process is running.
+11. Restart Obsidian with Pi open: the tab is back but empty, with no `pi`
+    process running. Select the tab: Pi starts.
 12. Quit Pi with `Ctrl+D`: the pane closes on its own.
 
 ## Theme
