@@ -84,7 +84,7 @@ npm run build                    # typechecks, then writes main.js and styles.cs
 npm run install-to -- "/path/to/Vault"
 ```
 
-`install-to` symlinks this folder into the vault's `.obsidian/plugins/pi-agent`.
+`install-to` symlinks this folder into the vault's `.obsidian/plugins/obsidian-pi-plugin`.
 A symlink rather than a copy matters: `node_modules/node-pty` must be present in
 the installed folder, because the native pseudo-terminal addon is deliberately
 not bundled into `main.js` and is loaded from there at runtime.

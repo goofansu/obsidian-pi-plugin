@@ -10,7 +10,8 @@ import {
 import { API_KEY_ENV, DEFAULT_SETTINGS, type Settings } from "./settings.js";
 
 const VAULT = "/Users/james/Vault";
-const AGENT_DIR = "/Users/james/Vault/.obsidian/plugins/pi-agent/pi-agent";
+const AGENT_DIR =
+  "/Users/james/Vault/.obsidian/plugins/obsidian-pi-plugin/pi-agent";
 
 const SETTINGS: Settings = { apiKey: "sk-test", model: "deepseek-v4-flash" };
 
@@ -237,9 +238,9 @@ describe("resolveLaunch — environment", () => {
 describe("locating plugin-relative paths", () => {
   it("builds the node-pty path from the vault root and the plugin folder", () => {
     expect(
-      nodePtyPath("/Users/james/Vault", ".obsidian/plugins/pi-agent"),
+      nodePtyPath("/Users/james/Vault", ".obsidian/plugins/obsidian-pi-plugin"),
     ).toBe(
-      "/Users/james/Vault/.obsidian/plugins/pi-agent/node_modules/node-pty",
+      "/Users/james/Vault/.obsidian/plugins/obsidian-pi-plugin/node_modules/node-pty",
     );
   });
 
@@ -250,13 +251,16 @@ describe("locating plugin-relative paths", () => {
 
   it("keeps the agent directory inside the plugin folder", () => {
     expect(
-      agentDirPath("/Users/james/Vault", ".obsidian/plugins/pi-agent"),
-    ).toBe("/Users/james/Vault/.obsidian/plugins/pi-agent/pi-agent");
+      agentDirPath(
+        "/Users/james/Vault",
+        ".obsidian/plugins/obsidian-pi-plugin",
+      ),
+    ).toBe("/Users/james/Vault/.obsidian/plugins/obsidian-pi-plugin/pi-agent");
   });
 
   it("still produces an agent directory when the plugin folder is unknown", () => {
     expect(agentDirPath("/Users/james/Vault", undefined)).toBe(
-      "/Users/james/Vault/.obsidian/plugins/pi-agent/pi-agent",
+      "/Users/james/Vault/.obsidian/plugins/obsidian-pi-plugin/pi-agent",
     );
   });
 });
