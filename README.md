@@ -66,13 +66,14 @@ Both open a new tab in the right sidebar, expanding it if collapsed. Panes can b
 dragged into the main editor area without interrupting the session. Closing a
 pane kills its process.
 
-Quitting Pi closes the pane. If Pi exits with an error the pane stays open
-instead, showing the exit code, and a keystroke restarts it.
+Pi keeps a tab in the right sidebar, the way Obsidian's own panes do, so there
+is always somewhere to click. Nothing runs until the pane is asked for: select
+its tab, click in it, or use either command. Opening a vault does not launch an
+agent.
 
-If Pi's pane was open when you quit, it comes back with your vault — its tab
-sits in the right sidebar as a way back in — but nothing runs until you select
-it. The pane is empty until then. Opening a vault should not launch an agent on
-its own.
+Quitting Pi empties the pane and leaves the tab in place; selecting it again
+starts a fresh session. If Pi exits with an error the output stays on screen,
+showing the exit code, and a keystroke restarts it.
 
 ## Build and install
 
@@ -121,9 +122,10 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 8. Ask Pi to read a second note in the vault.
 9. Drag a live pane into the main editor area: the session continues.
 10. Close a pane mid-response: `ps` shows no orphaned process.
-11. Restart Obsidian with Pi open: the tab is back but empty, with no `pi`
-    process running. Select the tab: Pi starts.
-12. Quit Pi with `Ctrl+D`: the pane closes on its own.
+11. Restart Obsidian: the tab is in the sidebar and empty, with no `pi` process
+    running. Select it: Pi starts.
+12. Quit Pi with `Ctrl+D`: the pane empties and the tab stays. Click it: a fresh
+    session starts.
 
 ## Theme
 

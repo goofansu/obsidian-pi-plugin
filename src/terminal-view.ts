@@ -33,11 +33,6 @@ export class TerminalView extends ItemView {
     private readonly pluginDir: string | undefined,
     /** Read at spawn time, so a key added in settings applies to the next start. */
     private readonly readSettings: () => Settings,
-    /**
-     * True when Obsidian rebuilt this pane from the saved workspace layout
-     * rather than a command opening it.
-     */
-    private readonly restored: boolean,
     private readonly onDispose: (view: TerminalView) => void,
   ) {
     super(leaf);
@@ -86,26 +81,19 @@ export class TerminalView extends ItemView {
       this.focusTerminal();
     });
 
-    if (this.restored) {
-      // A pane rebuilt from the saved layout keeps its place in the sidebar —
-      // the tab is the way back to Pi — but starts nothing until it is asked
-      // for. Opening a vault should not launch an agent on its own.
-      //
-      // Registered only once the layout has settled, so the restore itself
-      // cannot look like the user selecting the tab.
-      this.app.workspace.onLayoutReady(() => {
-        this.registerEvent(
-          this.app.workspace.on("active-leaf-change", (leaf) => {
-            if (leaf === this.leaf && !this.started) this.start();
-          }),
-        );
-      });
-      return;
-    }
-
-    // A pane opened by a command, the ribbon, or the hotkey is a request for
-    // Pi now.
-    this.start();
+    // A pane is never started by existing. It starts when it is activated —
+    // by selecting its tab, or by a command revealing it — which covers both
+    // the pane that sits waiting in the sidebar and the one a command opens.
+    //
+    // Registered once the layout has settled, so restoring a pane cannot look
+    // like the user selecting it.
+    this.app.workspace.onLayoutReady(() => {
+      this.registerEvent(
+        this.app.workspace.on("active-leaf-change", (leaf) => {
+          if (leaf === this.leaf && !this.started) this.start();
+        }),
+      );
+    });
   }
 
   override async onClose(): Promise<void> {
@@ -159,8 +147,11 @@ export class TerminalView extends ItemView {
   }
 
   /**
-   * Quitting Pi closes the pane, which is what quitting is meant to mean. A
-   * non-zero exit keeps the pane open instead: something went wrong, and the
+   * Quitting Pi empties the pane rather than closing it: the tab is a fixture
+   * of the sidebar, so it stays, and clearing the screen leaves nothing to
+   * dismiss. Selecting or clicking the pane starts a fresh session.
+   *
+   * A non-zero exit keeps its output instead: something went wrong, and the
    * code on screen is the only evidence of what.
    */
   private handleExit(exitCode: number): void {
@@ -171,7 +162,9 @@ export class TerminalView extends ItemView {
     this.started = false;
 
     if (exitCode === 0) {
-      this.leaf.detach();
+      // Clear the screen and the scrollback, so nothing of the finished
+      // session is left behind.
+      this.term?.write("\x1b[2J\x1b[3J\x1b[H");
       return;
     }
 

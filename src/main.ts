@@ -22,14 +22,10 @@ export default class PiPlugin extends Plugin {
     this.settings = parseSettings(await this.loadData());
 
     this.registerView(TERMINAL_VIEW_TYPE, (leaf) => {
-      // Anything built before the layout is ready came from the saved
-      // workspace rather than from a command.
-      const restored = !this.app.workspace.layoutReady;
       const view = new TerminalView(
         leaf,
         this.manifest.dir,
         () => this.settings,
-        restored,
         (v: TerminalView) => this.views.delete(v),
       );
       this.views.add(view);
@@ -37,6 +33,11 @@ export default class PiPlugin extends Plugin {
     });
 
     this.addSettingTab(new PiSettingTab(this));
+
+    // Pi keeps a tab in the right sidebar, the way the built-in panes do, so
+    // there is always somewhere to click. The pane is created without being
+    // revealed or activated, so nothing starts until it is asked for.
+    this.app.workspace.onLayoutReady(() => void this.ensurePane());
 
     this.addCommand({
       id: "toggle-focus",
@@ -117,6 +118,13 @@ export default class PiPlugin extends Plugin {
 
   private piLeaf(): WorkspaceLeaf | null {
     return this.app.workspace.getLeavesOfType(TERMINAL_VIEW_TYPE)[0] ?? null;
+  }
+
+  /** Puts a pane in the sidebar if there is not one, without starting it. */
+  private async ensurePane(): Promise<void> {
+    if (this.piLeaf()) return;
+    const leaf = this.app.workspace.getRightLeaf(false);
+    await leaf?.setViewState({ type: TERMINAL_VIEW_TYPE });
   }
 
   private async openPi(): Promise<void> {
