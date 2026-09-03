@@ -17,7 +17,7 @@ export default class WTermPiPlugin extends Plugin {
     this.addCommand({
       id: "open-terminal",
       name: "Open terminal",
-      callback: () => void this.openLaunch({ kind: "shell" }),
+      callback: () => void this.openLaunch({ kind: "pi" }),
     });
 
     this.addCommand({
@@ -28,6 +28,12 @@ export default class WTermPiPlugin extends Plugin {
         const notePath = this.app.workspace.getActiveFile()?.path;
         void this.openLaunch({ kind: "pi", notePath });
       },
+    });
+
+    this.addCommand({
+      id: "open-shell",
+      name: "Open shell",
+      callback: () => void this.openLaunch({ kind: "shell" }),
     });
   }
 

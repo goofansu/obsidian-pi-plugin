@@ -15,50 +15,74 @@
   background: var(--background-primary);
 }
 
-/* The emulator exposes its palette as custom properties, so the terminal can
-   follow the current Obsidian theme and accent colour without any code. Every
-   value has a literal fallback, so an unusual theme that omits a variable
-   degrades to a sensible colour rather than to nothing. */
-.wterm-pi-host.wterm {
-  --term-bg: var(--background-primary, #1e1e1e);
-  --term-fg: var(--text-normal, #d4d4d4);
-  --term-cursor: var(--text-accent, #aeafad);
+/* The palette is Pi's own, copied from the built-in dark.json and light.json
+   themes, so the agent looks in this pane exactly as it does in a terminal.
+   Which of the two is used follows Obsidian's light or dark mode.
 
+   The background stays Obsidian's, because Pi's themes deliberately do not set
+   one — the TUI inherits whatever the terminal provides — so the pane blends
+   with the app while the foreground colours remain Pi's. */
+.wterm-pi-host.wterm {
   --term-font-family: var(--font-monospace, ui-monospace, Menlo, monospace);
   --term-font-size: var(--font-ui-small, 13px);
   --term-line-height: 1.3;
-
-  --term-color-1: var(--color-red, #f44747);
-  --term-color-2: var(--color-green, #6a9955);
-  --term-color-3: var(--color-yellow, #d7ba7d);
-  --term-color-4: var(--color-blue, #569cd6);
-  --term-color-5: var(--color-purple, #c586c0);
-  --term-color-6: var(--color-cyan, #4ec9b0);
-  --term-color-7: var(--text-muted, #d4d4d4);
-
-  /* Obsidian has no separate bright palette, so bright repeats normal. The
-     two ends of the scale are what actually need to differ. */
-  --term-color-8: var(--text-faint, #808080);
-  --term-color-9: var(--color-red, #f44747);
-  --term-color-10: var(--color-green, #6a9955);
-  --term-color-11: var(--color-orange, #d7ba7d);
-  --term-color-12: var(--color-blue, #569cd6);
-  --term-color-13: var(--color-pink, #c586c0);
-  --term-color-14: var(--color-cyan, #4ec9b0);
-  --term-color-15: var(--text-normal, #ffffff);
+  --term-bg: var(--background-primary, #1e1e1e);
 }
 
-/* ANSI black is the one colour that cannot follow a scale which flips with the
-   theme: on a dark background it must stay near the background, on a light one
-   it must be genuinely dark. */
+/* Pi's dark theme. */
 .theme-dark .wterm-pi-host.wterm {
-  --term-color-0: var(--color-base-25, #1e1e1e);
+  --term-fg: #d4d4d4;        /* text */
+  --term-cursor: #8abeb7;    /* accent */
+
+  --term-color-0: #1e1e24;   /* cardBg, so black sits just off the background */
+  --term-color-1: #cc6666;   /* red */
+  --term-color-2: #b5bd68;   /* green */
+  --term-color-3: #f0c674;   /* mdHeading, a softer yellow than the warning one */
+  --term-color-4: #5f87ff;   /* blue */
+  --term-color-5: #b294bb;   /* thinkingHigh */
+  --term-color-6: #8abeb7;   /* accent */
+  --term-color-7: #d4d4d4;   /* text */
+
+  /* Pi has a second, brighter tone only for some colours; the rest repeat. */
+  --term-color-8: #808080;   /* gray */
+  --term-color-9: #cc6666;
+  --term-color-10: #b5bd68;
+  --term-color-11: #ffff00;  /* yellow, Pi's warning colour */
+  --term-color-12: #81a2be;  /* mdLink */
+  --term-color-13: #d183e8;  /* thinkingXhigh */
+  --term-color-14: #00d7ff;  /* cyan */
+  --term-color-15: #ffffff;
 }
 
+.theme-dark .wterm-pi-host.wterm ::selection {
+  background: #3a3a4a;       /* selectedBg */
+}
+
+/* Pi's light theme. */
 .theme-light .wterm-pi-host.wterm {
-  --term-color-0: var(--color-base-100, #000000);
+  --term-fg: #1f2328;        /* text */
+  --term-cursor: #5a8080;    /* teal, the light theme's accent */
+
+  --term-color-0: #1f2328;   /* on a light background, black must be the text tone */
+  --term-color-1: #aa5555;   /* red */
+  --term-color-2: #588458;   /* green */
+  --term-color-3: #9a7326;   /* yellow */
+  --term-color-4: #547da7;   /* blue */
+  --term-color-5: #7e57c2;   /* customMessageLabel */
+  --term-color-6: #5a8080;   /* teal */
+  --term-color-7: #6c6c6c;   /* mediumGray */
+
+  --term-color-8: #b0b0b0;   /* lightGray */
+  --term-color-9: #aa5555;
+  --term-color-10: #588458;
+  --term-color-11: #9a7326;
+  --term-color-12: #547da7;
+  --term-color-13: #8b008b;  /* thinkingXhigh */
+  --term-color-14: #5a8080;
+  /* Bright white would vanish on a light background, so it is the text tone. */
+  --term-color-15: #1f2328;
 }
 
-.wterm-pi-host.wterm ::selection {
-  background: var(--text-selection, rgba(86, 156, 214, 0.3));
+.theme-light .wterm-pi-host.wterm ::selection {
+  background: #d0d0e0;       /* selectedBg */
 }

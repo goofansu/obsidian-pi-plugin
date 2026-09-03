@@ -10,8 +10,9 @@ distributed. The spec lives in `.scratch/obsidian-wterm-spec.md`.
 
 | Command | What it runs |
 | --- | --- |
-| **Open terminal** | `fish -l` in the vault root |
+| **Open terminal** | Pi in the vault root, with no note argument |
 | **Open Pi for current note** | Pi in the vault root, with the active note as an `@file` argument |
+| **Open shell** | `fish -l` in the vault root |
 
 Both open a new tab in the right sidebar, expanding it if collapsed. Panes can be
 dragged into the main editor area without interrupting the session. Closing a
@@ -72,10 +73,17 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 
 ## Theme
 
-The terminal follows the current Obsidian theme: background, text, accent cursor,
-named colours, monospace font, and selection colour all come from Obsidian's own
-CSS variables, and it switches with the theme with no restart. To adjust it,
-override the emulator's custom properties in a CSS snippet, for example:
+The palette is Pi's own, copied from its built-in `dark.json` and `light.json`
+themes, so Pi looks here as it does in a terminal. Obsidian's light or dark mode
+picks which one applies, switching with no restart. The background stays
+Obsidian's — Pi's themes set none, inheriting the terminal's — so the pane blends
+with the app. The monospace font and size follow Obsidian too.
+
+If Pi's themes change upstream, they are at
+`dist/modes/interactive/theme/{dark,light}.json` in the installed package.
+
+To adjust anything, override the emulator's custom properties in a CSS snippet,
+for example:
 
 ```css
 .wterm-pi-host.wterm { --term-font-size: 15px; }
