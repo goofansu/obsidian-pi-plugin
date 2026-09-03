@@ -155,13 +155,4 @@ export function agentDirPath(vaultRoot: string, pluginDir: string | undefined): 
   return `${vaultRoot}/${pluginDir ?? ".obsidian/plugins/wterm-pi"}/pi-agent`;
 }
 
-/**
- * Whether the pane was opened by a command (start now) rather than rebuilt from
- * the saved workspace layout (wait). It travels in the leaf's view state but is
- * deliberately absent from `serializeLaunch`, so it is never persisted.
- */
-export function parseAutostart(state: unknown): boolean {
-  if (typeof state !== "object" || state === null) return false;
-  return (state as { autostart?: unknown }).autostart === true;
-}
 

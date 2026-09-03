@@ -130,13 +130,7 @@ export default class WTermPiPlugin extends Plugin {
       return;
     }
 
-    // autostart rides in the view state because Obsidian delivers that
-    // reliably; getState() omits it, so it is never persisted.
-    await leaf.setViewState({
-      type: TERMINAL_VIEW_TYPE,
-      active: true,
-      state: { autostart: true },
-    });
+    await leaf.setViewState({ type: TERMINAL_VIEW_TYPE, active: true });
     await this.app.workspace.revealLeaf(leaf);
 
     // After revealing, not before: revealing moves focus to the pane container.

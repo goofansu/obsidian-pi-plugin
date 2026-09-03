@@ -1,9 +1,4 @@
-import {
-  FileSystemAdapter,
-  ItemView,
-  type ViewStateResult,
-  type WorkspaceLeaf,
-} from "obsidian";
+import { FileSystemAdapter, ItemView, type WorkspaceLeaf } from "obsidian";
 import { WTerm } from "@wterm/dom";
 import { mkdirSync } from "node:fs";
 import { TerminalQueryFilter } from "./terminal-queries.js";
@@ -13,7 +8,6 @@ import type { IPty } from "node-pty";
 import {
   agentDirPath,
   nodePtyPath,
-  parseAutostart,
   resolveLaunch,
   type Appearance,
 } from "./launch.js";
@@ -27,7 +21,6 @@ export class TerminalView extends ItemView {
   private process: IPty | null = null;
   private subscriptions: Subscription[] = [];
   private started = false;
-  private autostart = false;
   private queries = new TerminalQueryFilter();
   private host: HTMLElement | null = null;
   private altScreen = false;
@@ -57,14 +50,8 @@ export class TerminalView extends ItemView {
     return "terminal";
   }
 
-  override async setState(state: unknown, result: ViewStateResult): Promise<void> {
-    if (parseAutostart(state)) this.autostart = true;
-    await super.setState(state, result);
-  }
-
   override getState(): Record<string, unknown> {
-    // Deliberately empty: autostart must never be persisted, and there is
-    // nothing else a restored pane needs to know.
+    // Deliberately empty: a pane needs to know nothing to be restored.
     return {};
   }
 
@@ -80,7 +67,7 @@ export class TerminalView extends ItemView {
       onResize: (cols, rows) => this.process?.resize(cols, rows),
     }).init();
 
-    // A click is the other way a waiting pane is activated.
+    // After a failure the pane is idle; a click retries it.
     this.registerDomEvent(host, "mousedown", () => {
       if (!this.started) this.start();
       this.focusTerminal();
@@ -94,11 +81,9 @@ export class TerminalView extends ItemView {
       this.focusTerminal();
     });
 
-    if (this.autostart) {
-      this.start();
-    } else {
-      this.writeIdleNotice();
-    }
+    // Opening a pane means wanting Pi, whether the command opened it or
+    // Obsidian restored it, so there is nothing to wait for.
+    this.start();
   }
 
   override async onClose(): Promise<void> {
@@ -210,15 +195,12 @@ export class TerminalView extends ItemView {
 
   private handleInput(data: string): void {
     if (!this.started) {
-      // First keystroke in a waiting pane starts it rather than being echoed.
+      // Only reachable after a failure or a non-zero exit: the keystroke
+      // retries rather than being echoed into nothing.
       this.start();
       return;
     }
     this.process?.write(data);
-  }
-
-  private writeIdleNotice(): void {
-    this.dim("[waiting] Click or press any key to start Pi.");
   }
 
   private dim(message: string): void {

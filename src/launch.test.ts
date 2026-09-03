@@ -5,7 +5,6 @@ import {
   PI_COMMAND,
   agentDirPath,
   nodePtyPath,
-  parseAutostart,
   resolveLaunch,
 } from "./launch.js";
 import { API_KEY_ENV, DEFAULT_SETTINGS, type Settings } from "./settings.js";
@@ -260,19 +259,4 @@ describe("locating plugin-relative paths", () => {
 
 
 
-describe("parseAutostart", () => {
-  it("is true only when the opening command asked for it", () => {
-    expect(parseAutostart({ autostart: true })).toBe(true);
-  });
-
-  it.each([
-    ["a restored pane", {}],
-    ["a falsy flag", { autostart: false }],
-    ["a non-boolean flag", { autostart: "yes" }],
-    ["undefined", undefined],
-    ["null", null],
-  ])("is false for %s", (_label, state) => {
-    expect(parseAutostart(state)).toBe(false);
-  });
-});
 
