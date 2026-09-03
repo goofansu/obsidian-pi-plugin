@@ -165,23 +165,6 @@ class PiSettingTab extends PluginSettingTab {
     this.containerEl.empty();
 
     new Setting(this.containerEl)
-      .setName("DeepSeek API key")
-      .setDesc(
-        "Required. Stored in this plugin's data file inside the vault, and passed to Pi as an environment variable rather than on the command line.",
-      )
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text.inputEl.autocomplete = "off";
-        text
-          .setPlaceholder("sk-…")
-          .setValue(this.plugin.settings.apiKey)
-          .onChange(async (value) => {
-            this.plugin.settings.apiKey = value.trim();
-            await this.plugin.saveSettings();
-          });
-      });
-
-    new Setting(this.containerEl)
       .setName("Extra PATH directories")
       .setDesc(
         "Where to look for pi and node, if Obsidian's own PATH does not already reach them. Searched first. One per line, or separated by colons; absolute paths only. Takes effect on the next session.",
@@ -194,6 +177,23 @@ class PiSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.pathDirs)
           .onChange(async (value) => {
             this.plugin.settings.pathDirs = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(this.containerEl)
+      .setName("DeepSeek API key")
+      .setDesc(
+        "Required. Stored in this plugin's data file inside the vault, and passed to Pi as an environment variable rather than on the command line.",
+      )
+      .addText((text) => {
+        text.inputEl.type = "password";
+        text.inputEl.autocomplete = "off";
+        text
+          .setPlaceholder("sk-…")
+          .setValue(this.plugin.settings.apiKey)
+          .onChange(async (value) => {
+            this.plugin.settings.apiKey = value.trim();
             await this.plugin.saveSettings();
           });
       });

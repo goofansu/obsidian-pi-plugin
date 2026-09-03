@@ -26,15 +26,15 @@ Rebind the key in Settings → Hotkeys if it clashes with something.
 
 Settings → Community plugins → Pi:
 
-- **DeepSeek API key** — required. A pane opened without one says so and waits.
-- **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
-  sessions started from then on; both can be cycled inside a running session.
 - **Extra PATH directories** — where to look for `pi` and `node`. Obsidian
   launched from the Finder inherits a bare `PATH` that usually reaches neither,
   so this is normally required. One per line or colon-separated; absolute paths
   only. To find yours, run `command -v node` and `npm prefix -g` in a terminal —
   the answers are the directory holding node, and npm's prefix with `/bin`.
   A pane that cannot find `pi` says so and names this setting.
+- **DeepSeek API key** — required. A pane opened without one says so and waits.
+- **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
+  sessions started from then on; both can be cycled inside a running session.
 
 Pi has a native `deepseek` provider, so nothing else needs configuring.
 
