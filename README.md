@@ -12,6 +12,7 @@ distributed. The spec lives in `.scratch/obsidian-wterm-spec.md`.
 | --- | --- | --- |
 | **Show or hide Pi** | — | Opens the Pi pane, or closes it if it is open |
 | **Jump between your note and Pi** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi. Opens Pi if it is not open. |
+| **Send selected text to Pi** | `Cmd+Shift+>` | Puts the selected note text into Pi's editor and focuses it. Inserted, never submitted — add your question and press enter yourself. |
 
 One session, in the right sidebar, running in your vault. There is no shell
 command and no per-note command: Pi reads any note it needs with its own tools.
@@ -101,12 +102,15 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 4. Drag the sidebar wider: the terminal reflows and `vim` redraws at the new size.
 5. From a note, press `Cmd+Shift+/`: focus lands in Pi. Press it again: focus
    returns to the note. Press it with Pi closed: Pi opens and takes focus.
-6. The shell pane and the Pi pane coexist as separate sidebar tabs.
-7. Ask Pi to read a second note in the vault.
-8. Drag a live pane into the main editor area: the session continues.
-9. Close a pane mid-response: `ps` shows no orphaned process.
-10. Restart Obsidian: restored panes are idle, and clicking one starts it.
-11. Type `exit` in a shell pane: the exit code is reported, and a keystroke
+6. Select a few lines in a note and press `Cmd+Shift+>`: the passage appears in
+   Pi's editor, unsent, with the cursor there. Press it with nothing selected:
+   a notice says so.
+7. The shell pane and the Pi pane coexist as separate sidebar tabs.
+8. Ask Pi to read a second note in the vault.
+9. Drag a live pane into the main editor area: the session continues.
+10. Close a pane mid-response: `ps` shows no orphaned process.
+11. Restart Obsidian: restored panes are idle, and clicking one starts it.
+12. Type `exit` in a shell pane: the exit code is reported, and a keystroke
     starts a fresh shell in the same pane.
 
 ## Theme

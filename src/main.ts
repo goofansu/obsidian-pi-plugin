@@ -35,6 +35,13 @@ export default class WTermPiPlugin extends Plugin {
     });
 
     this.addCommand({
+      id: "send-selection-to-pi",
+      name: "Send selected text to Pi",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "." }],
+      callback: () => void this.sendSelectionToPi(),
+    });
+
+    this.addCommand({
       id: "focus-pi",
       name: "Jump between your note and Pi",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "/" }],
@@ -80,6 +87,30 @@ export default class WTermPiPlugin extends Plugin {
 
     await this.app.workspace.revealLeaf(leaf);
     if (view instanceof TerminalView) view.focusTerminal();
+  }
+
+  /**
+   * The selection is read from the last active editor rather than from whatever
+   * has focus, so this works while the keyboard is already in Pi.
+   */
+  private async sendSelectionToPi(): Promise<void> {
+    const selection = this.app.workspace.activeEditor?.editor?.getSelection() ?? "";
+    if (selection.trim() === "") {
+      new Notice("Select some text in a note first");
+      return;
+    }
+
+    if (!this.piLeaf()) await this.openPi();
+    const leaf = this.piLeaf();
+    const view = leaf?.view;
+    if (!(view instanceof TerminalView)) {
+      new Notice("wterm Pi: could not reach Pi");
+      return;
+    }
+
+    if (leaf) await this.app.workspace.revealLeaf(leaf);
+    view.paste(selection);
+    view.focusTerminal();
   }
 
   /** The note the user was last in, which is where the keyboard goes back to. */

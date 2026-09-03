@@ -7,6 +7,7 @@ import {
 import { WTerm } from "@wterm/dom";
 import { mkdirSync } from "node:fs";
 import { DeviceAttributeResponder } from "./device-attributes.js";
+import { bracketedPaste } from "./paste.js";
 import type { Settings } from "./settings.js";
 import type { IPty } from "node-pty";
 import {
@@ -28,6 +29,8 @@ export class TerminalView extends ItemView {
   private started = false;
   private autostart = false;
   private deviceAttributes = new DeviceAttributeResponder();
+  private pendingPaste: string | null = null;
+  private settleTimer: number | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -104,6 +107,25 @@ export class TerminalView extends ItemView {
     this.term?.focus();
   }
 
+  /**
+   * Puts text into Pi's editor without submitting it. If Pi is still starting,
+   * the text is held and delivered once its interface has settled — otherwise
+   * it would be written into a terminal that is not yet listening.
+   */
+  paste(text: string): boolean {
+    const payload = bracketedPaste(text);
+    if (payload === null) return false;
+
+    if (this.process) {
+      this.process.write(payload);
+      return true;
+    }
+
+    this.pendingPaste = payload;
+    if (!this.started) this.start();
+    return true;
+  }
+
   /** Whether the keyboard is currently in this pane. */
   hasFocus(): boolean {
     const active = this.containerEl.ownerDocument.activeElement;
@@ -112,6 +134,9 @@ export class TerminalView extends ItemView {
 
   /** Called by the plugin on unload, so no process outlives the plugin. */
   dispose(): void {
+    if (this.settleTimer !== null) window.clearTimeout(this.settleTimer);
+    this.settleTimer = null;
+    this.pendingPaste = null;
     this.disposeSubscriptions();
     this.process?.kill();
     this.process = null;
@@ -132,6 +157,20 @@ export class TerminalView extends ItemView {
     this.process = null;
     this.started = false;
     this.dim(`\r\n[process exited ${exitCode}] Press any key to start again.`);
+  }
+
+  /**
+   * Pi's interface paints for a moment after it starts. Waiting for a pause in
+   * its output is a better signal that it is ready than any fixed delay.
+   */
+  private deliverPasteWhenSettled(proc: IPty): void {
+    if (this.settleTimer !== null) window.clearTimeout(this.settleTimer);
+    this.settleTimer = window.setTimeout(() => {
+      this.settleTimer = null;
+      const payload = this.pendingPaste;
+      this.pendingPaste = null;
+      if (payload) proc.write(payload);
+    }, 400);
   }
 
   private disposeSubscriptions(): void {
@@ -217,6 +256,7 @@ export class TerminalView extends ItemView {
     this.subscriptions.push(
       proc.onData((data) => {
         term.write(data);
+        if (this.pendingPaste) this.deliverPasteWhenSettled(proc);
         // The emulator does not answer device attribute queries; fish blocks
         // for ten seconds waiting on one, so answer on its behalf.
         const reply = this.deviceAttributes.respond(data);
