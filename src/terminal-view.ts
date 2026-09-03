@@ -5,6 +5,7 @@ import {
   type WorkspaceLeaf,
 } from "obsidian";
 import { WTerm } from "@wterm/dom";
+import { DeviceAttributeResponder } from "./device-attributes.js";
 import type { IPty } from "node-pty";
 import {
   launchDescription,
@@ -28,6 +29,7 @@ export class TerminalView extends ItemView {
   private subscriptions: Subscription[] = [];
   private started = false;
   private autostart = false;
+  private deviceAttributes = new DeviceAttributeResponder();
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -190,10 +192,17 @@ export class TerminalView extends ItemView {
     }
 
     this.subscriptions.push(
-      proc.onData((data) => term.write(data)),
+      proc.onData((data) => {
+        term.write(data);
+        // The emulator does not answer device attribute queries; fish blocks
+        // for ten seconds waiting on one, so answer on its behalf.
+        const reply = this.deviceAttributes.respond(data);
+        if (reply) proc.write(reply);
+      }),
       proc.onExit(({ exitCode }) => this.handleExit(exitCode)),
     );
 
+    this.deviceAttributes = new DeviceAttributeResponder();
     this.process = proc;
     term.focus();
   }

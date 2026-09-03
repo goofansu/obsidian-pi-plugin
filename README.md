@@ -51,21 +51,23 @@ Do not introduce a binary download system unless this proves insufficient.
 
 ## Verification checklist
 
-Automated tests cover the launch resolver only. Everything below is checked by
+Automated tests cover the two pure modules only. Everything below is checked by
 hand, because the rest needs a real Obsidian and Electron runtime.
 
 1. With the right sidebar collapsed, run **Open terminal**: the sidebar expands
    and the pane has focus.
-2. Plain output, `vim`, and colour render correctly.
-3. Drag the sidebar wider: the terminal reflows and `vim` redraws at the new size.
-4. Run **Open Pi for current note** from an open note: Pi starts with that note in
+2. The prompt appears immediately, with no "could not read response to Primary
+   Device Attribute query" warning.
+3. Plain output, `vim`, and colour render correctly.
+4. Drag the sidebar wider: the terminal reflows and `vim` redraws at the new size.
+5. Run **Open Pi for current note** from an open note: Pi starts with that note in
    context, and the note captured is the one you were reading — not the terminal.
-5. The shell pane and the Pi pane coexist as separate sidebar tabs.
-6. Ask Pi to read a second note in the vault.
-7. Drag a live pane into the main editor area: the session continues.
-8. Close a pane mid-response: `ps` shows no orphaned process.
-9. Restart Obsidian: restored panes are idle, and clicking one starts it.
-10. Type `exit` in a shell pane: the exit code is reported, and a keystroke
+6. The shell pane and the Pi pane coexist as separate sidebar tabs.
+7. Ask Pi to read a second note in the vault.
+8. Drag a live pane into the main editor area: the session continues.
+9. Close a pane mid-response: `ps` shows no orphaned process.
+10. Restart Obsidian: restored panes are idle, and clicking one starts it.
+11. Type `exit` in a shell pane: the exit code is reported, and a keystroke
     starts a fresh shell in the same pane.
 
 ## Development
