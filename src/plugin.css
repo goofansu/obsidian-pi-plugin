@@ -15,6 +15,20 @@
   background: var(--background-primary);
 }
 
+/* While a full-screen program such as vi is running, the terminal is on its
+   alternate screen, which has no scrollback. The emulator still reports the
+   main screen's scrollback, so without this the earlier session is drawn above
+   the program and the pane scrolls. Later in the file than the emulator's own
+   rules, so it wins on equal specificity without !important. */
+.wterm-pi-host.wterm-pi-alt {
+  overflow-y: hidden;
+}
+
+.wterm-pi-host.wterm-pi-alt .term-scrollback-row,
+.wterm-pi-host.wterm-pi-alt .term-scrollback-spacer {
+  display: none;
+}
+
 /* The palette is Pi's own, copied from the built-in dark.json and light.json
    themes, so the agent looks in this pane exactly as it does in a terminal.
    Which of the two is used follows Obsidian's light or dark mode.

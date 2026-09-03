@@ -29,6 +29,8 @@ export class TerminalView extends ItemView {
   private started = false;
   private autostart = false;
   private queries = new TerminalQueryFilter();
+  private host: HTMLElement | null = null;
+  private altScreen = false;
   private pendingPaste: string | null = null;
   private settleTimer: number | null = null;
 
@@ -68,6 +70,7 @@ export class TerminalView extends ItemView {
 
   override async onOpen(): Promise<void> {
     const host = this.contentEl.createDiv({ cls: "wterm-pi-host" });
+    this.host = host;
 
     // The callbacks are supplied up front so the terminal never handles input
     // on its own while there is no process to send it to.
@@ -142,6 +145,8 @@ export class TerminalView extends ItemView {
     this.process = null;
     this.term?.destroy();
     this.term = null;
+    this.host = null;
+    this.altScreen = false;
     this.started = false;
     this.onDispose(this);
   }
@@ -171,6 +176,24 @@ export class TerminalView extends ItemView {
       this.pendingPaste = null;
       if (payload) proc.write(payload);
     }, 400);
+  }
+
+  /**
+   * A full-screen program such as vi switches the terminal to its alternate
+   * screen, which has no scrollback. The emulator still reports the main
+   * screen's scrollback while that is happening, so the renderer keeps drawing
+   * the earlier session above the program — Pi's startup output appearing over
+   * vi. Hiding it is a stylesheet matter; this only tracks the state.
+   */
+  private syncAltScreen(term: WTerm): void {
+    const alt = term.bridge?.usingAltScreen() ?? false;
+    if (alt === this.altScreen) return;
+
+    this.altScreen = alt;
+    this.host?.classList.toggle("wterm-pi-alt", alt);
+    // The alternate screen starts at the top; any inherited scroll offset
+    // would leave the program drawn partly out of view.
+    if (alt && this.host) this.host.scrollTop = 0;
   }
 
   private disposeSubscriptions(): void {
@@ -258,7 +281,10 @@ export class TerminalView extends ItemView {
         // Filtered before display: some queries the core cannot handle would
         // otherwise be printed as text, and some need an answer.
         const { text, reply } = this.queries.process(data);
-        if (text) term.write(text);
+        if (text) {
+          term.write(text);
+          this.syncAltScreen(term);
+        }
         if (reply) proc.write(reply);
         if (this.pendingPaste) this.deliverPasteWhenSettled(proc);
       }),
