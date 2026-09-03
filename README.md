@@ -40,8 +40,8 @@ does not appear in the process list. It is as safe as your vault, and no safer.
 ## External editor
 
 Pi's Ctrl+G opens `vi`. Pi would otherwise fall back to `nano`, since Obsidian
-launched from the Finder passes no `EDITOR` or `VISUAL`. Change `EDITOR_COMMAND` in the launch
-module to use something else.
+launched from the Finder passes no `EDITOR` or `VISUAL`. Change `EDITOR_COMMAND` in
+`src/launch.ts` to use something else.
 
 ## Self-contained agent
 
@@ -153,6 +153,21 @@ for example:
 ```css
 .pi-terminal.wterm { --term-font-size: 15px; }
 ```
+
+## Where things are
+
+| File | What it holds |
+| --- | --- |
+| `src/launch.ts` | Everything about how Pi is started: the command, its arguments, the environment, and the machine-specific directories put on `PATH`. Pure — no Obsidian, no terminal. |
+| `src/settings.ts` | The two models on offer and the stored settings. |
+| `src/paste.ts` | Turning a note selection into something safe to paste. |
+| `src/terminal-queries.ts` | Answering and hiding the terminal queries the emulator does not handle. |
+| `src/terminal-view.ts` | The pane: the terminal, the process, and their lifecycle. |
+| `src/main.ts` | The plugin: commands, the sidebar tab, and the settings screen. |
+| `src/plugin.css` | Sizing and the colour palette. |
+
+The first four are pure and carry the tests. The last three need a running
+Obsidian and are checked by hand.
 
 ## Development
 
