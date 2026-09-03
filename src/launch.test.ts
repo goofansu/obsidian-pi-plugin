@@ -4,6 +4,7 @@ import {
   EDITOR_COMMAND,
   LOCALE,
   nodePtyPath,
+  PATH_PREPEND,
   PI_COMMAND,
   resolveLaunch,
 } from "./launch.js";
@@ -33,8 +34,10 @@ describe("resolveLaunch — command and arguments", () => {
     const spec = resolve();
 
     expect(spec.command).toBe(PI_COMMAND);
-    // The directory holding it is on that PATH, ahead of anything inherited.
-    expect(spec.env.PATH.split(":")[1]).toBe("/Users/james/.npm-global/bin");
+    // The directories holding it lead that PATH, ahead of anything inherited.
+    expect(spec.env.PATH.split(":").slice(0, PATH_PREPEND.length)).toEqual(
+      PATH_PREPEND,
+    );
   });
 
   it("trusts the vault on every launch, so the trust prompt never appears", () => {
@@ -176,6 +179,13 @@ describe("resolveLaunch — the external editor", () => {
   });
 });
 
+describe("the directories read from the machine", () => {
+  it("are absolute, and lead with somewhere node can be found", () => {
+    expect(PATH_PREPEND.length).toBeGreaterThan(0);
+    for (const dir of PATH_PREPEND) expect(dir.startsWith("/")).toBe(true);
+  });
+});
+
 describe("resolveLaunch — the locale", () => {
   it("declares a UTF-8 locale, without which programs render mojibake", () => {
     const spec = resolve();
@@ -211,8 +221,8 @@ describe("resolveLaunch — environment", () => {
   it("puts the interpreter directories on PATH ahead of the inherited one", () => {
     const dirs = resolve({ PATH: "/usr/bin:/bin" }).env.PATH.split(":");
 
-    expect(dirs).toContain("/etc/profiles/per-user/james/bin");
-    expect(dirs.indexOf("/etc/profiles/per-user/james/bin")).toBeLessThan(
+    for (const dir of PATH_PREPEND) expect(dirs).toContain(dir);
+    expect(dirs.indexOf(PATH_PREPEND[0])).toBeLessThan(
       dirs.indexOf("/usr/bin"),
     );
   });
@@ -237,18 +247,16 @@ describe("resolveLaunch — environment", () => {
   it("still provides a PATH when none is inherited", () => {
     const spec = resolve();
 
-    expect(spec.env.PATH).toContain("/etc/profiles/per-user/james/bin");
+    for (const dir of PATH_PREPEND) expect(spec.env.PATH).toContain(dir);
     expect(spec.env.PATH.endsWith(":")).toBe(false);
   });
 
   it("does not repeat a directory already present on the inherited PATH", () => {
     const dirs = resolve({
-      PATH: "/etc/profiles/per-user/james/bin:/bin",
+      PATH: `${PATH_PREPEND[0]}:/bin`,
     }).env.PATH.split(":");
 
-    expect(
-      dirs.filter((d) => d === "/etc/profiles/per-user/james/bin"),
-    ).toHaveLength(1);
+    expect(dirs.filter((d) => d === PATH_PREPEND[0])).toHaveLength(1);
   });
 });
 

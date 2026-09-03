@@ -25,16 +25,19 @@ export const EDITOR_COMMAND = "vi";
 /** Any UTF-8 locale will do; this one is present on macOS. */
 export const LOCALE = "en_US.UTF-8";
 
+/** Injected at build time from this machine; see `pathDirs` in esbuild.config.mjs. */
+declare const __PI_PATH_DIRS__: string[];
+
 /**
  * Pi is a Node script started through a `#!/usr/bin/env node` line, so `node`
- * itself must be findable. Obsidian launched from the Finder inherits a bare
- * `PATH` containing neither the profile directory holding `node` nor the npm
- * global directory, so both are prepended here.
+ * itself must be findable, and `pi` lives in npm's global directory. Obsidian
+ * launched from the Finder inherits a bare `PATH` containing neither, so both
+ * are prepended here.
+ *
+ * Read from the machine when the plugin is built rather than written down, so
+ * moving node or changing npm's global prefix needs a rebuild and nothing else.
  */
-export const PATH_PREPEND = [
-  "/etc/profiles/per-user/james/bin",
-  "/Users/james/.npm-global/bin",
-];
+export const PATH_PREPEND: string[] = __PI_PATH_DIRS__;
 
 /**
  * Appended, not prepended, so they never shadow the user's own tools. They are
