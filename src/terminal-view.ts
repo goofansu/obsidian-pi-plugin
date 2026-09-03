@@ -15,6 +15,28 @@ import { TerminalQueryFilter } from "./terminal-queries.js";
 
 export const TERMINAL_VIEW_TYPE = "pi-agent";
 
+/**
+ * Pi's own mark, traced from its logo: seven rectangles on a four-by-four grid,
+ * scaled onto the 0-100 canvas Obsidian expects and filled with `currentColor`
+ * so it follows the theme.
+ *
+ * Registered rather than taken from Obsidian's built-in set, which follows
+ * Lucide and carries no pi glyph in every version — a missing name renders as
+ * nothing at all.
+ */
+export const PI_ICON_ID = "pi-symbol";
+export const PI_ICON_SVG = [
+  '<g fill="currentColor">',
+  '<rect x="10" y="10" width="60" height="20" />',
+  '<rect x="10" y="30" width="20" height="20" />',
+  '<rect x="50" y="30" width="20" height="20" />',
+  '<rect x="10" y="50" width="40" height="20" />',
+  '<rect x="70" y="50" width="20" height="20" />',
+  '<rect x="10" y="70" width="20" height="20" />',
+  '<rect x="70" y="70" width="20" height="20" />',
+  "</g>",
+].join("");
+
 type Subscription = { dispose(): void };
 
 export class TerminalView extends ItemView {
@@ -48,7 +70,7 @@ export class TerminalView extends ItemView {
   }
 
   override getIcon(): string {
-    return "terminal";
+    return PI_ICON_ID;
   }
 
   override getState(): Record<string, unknown> {

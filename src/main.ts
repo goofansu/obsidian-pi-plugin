@@ -1,4 +1,5 @@
 import {
+  addIcon,
   Notice,
   Plugin,
   PluginSettingTab,
@@ -12,13 +13,20 @@ import {
   parseSettings,
   type Settings,
 } from "./settings.js";
-import { TERMINAL_VIEW_TYPE, TerminalView } from "./terminal-view.js";
+import {
+  PI_ICON_ID,
+  PI_ICON_SVG,
+  TERMINAL_VIEW_TYPE,
+  TerminalView,
+} from "./terminal-view.js";
 
 export default class PiPlugin extends Plugin {
   private views = new Set<TerminalView>();
   override settings: Settings = { ...DEFAULT_SETTINGS };
 
   override async onload(): Promise<void> {
+    addIcon(PI_ICON_ID, PI_ICON_SVG);
+
     this.settings = parseSettings(await this.loadData());
 
     this.registerView(TERMINAL_VIEW_TYPE, (leaf) => {
