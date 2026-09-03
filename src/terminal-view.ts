@@ -49,6 +49,7 @@ export class TerminalView extends ItemView {
   private altScreen = false;
   private pendingPaste: string | null = null;
   private settleTimer: number | null = null;
+  private focusTimer: number | null = null;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -94,11 +95,12 @@ export class TerminalView extends ItemView {
     this.registerDomEvent(host, "mousedown", () => {
       if (!this.started) this.start();
       this.focusTerminal();
+      this.focusTerminalAfterPress();
     });
 
-    // Obsidian focuses the pane's own container when the leaf is revealed or
-    // its tab is selected, which would otherwise leave the terminal's hidden
-    // textarea unfocused and the keyboard dead. Hand focus back to it.
+    // A second line of defence, for focus that lands inside the pane without a
+    // request having been made of the view: anything here that is not the
+    // terminal's own textarea should not be holding the keyboard.
     this.registerDomEvent(this.contentEl, "focusin", (event) => {
       if (event.target instanceof HTMLTextAreaElement) return;
       this.focusTerminal();
@@ -131,6 +133,46 @@ export class TerminalView extends ItemView {
   }
 
   /**
+   * How Obsidian asks a view for the keyboard, and the last thing it does when
+   * a leaf is activated: it blurs whatever had focus outside the leaf, then
+   * hands the request to the view. A view that ignores the request is left
+   * with the keyboard on nothing at all — which is why the pane could be
+   * selected, or clicked to start a session, and still not take typing until
+   * it was clicked a second time.
+   *
+   * The terminal's input is a hidden textarea, so nothing else in the pane can
+   * usefully hold focus; every focus request goes to it.
+   */
+  override setEphemeralState(state: unknown): void {
+    if (isFocusRequest(state)) this.focusTerminal();
+  }
+
+  /**
+   * Gives the keyboard to the terminal once the press asking for it is over.
+   *
+   * A press moves focus itself, as part of its default action, after every
+   * handler has run — so focusing from the handler is undone a moment later.
+   * The emulator repairs that when the click arrives, which covers a press on
+   * a running session but not the press that starts one: clearing the screen
+   * for Pi replaces the row elements, and a press whose element has been
+   * removed produces no click at all, so nothing puts focus back.
+   *
+   * Left alone while text is selected, so this cannot collapse a selection
+   * made by dragging, which is the same reserve the emulator keeps.
+   */
+  private focusTerminalAfterPress(): void {
+    if (this.focusTimer !== null) window.clearTimeout(this.focusTimer);
+    // A timeout rather than a microtask: the default action runs after the
+    // handlers but before the task ends, so only a later task is after it.
+    this.focusTimer = window.setTimeout(() => {
+      this.focusTimer = null;
+      const selection = this.containerEl.ownerDocument.getSelection();
+      if (selection && !selection.isCollapsed) return;
+      this.focusTerminal();
+    }, 0);
+  }
+
+  /**
    * Puts text into Pi's editor without submitting it. If Pi is still starting,
    * the text is held and delivered once its interface has settled — otherwise
    * it would be written into a terminal that is not yet listening.
@@ -159,6 +201,8 @@ export class TerminalView extends ItemView {
   dispose(): void {
     if (this.settleTimer !== null) window.clearTimeout(this.settleTimer);
     this.settleTimer = null;
+    if (this.focusTimer !== null) window.clearTimeout(this.focusTimer);
+    this.focusTimer = null;
     this.pendingPaste = null;
     this.disposeSubscriptions();
     this.process?.kill();
@@ -405,4 +449,10 @@ function isExecutable(command: string, path: string): boolean {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** Whether an ephemeral state asks for the keyboard. */
+function isFocusRequest(state: unknown): boolean {
+  if (typeof state !== "object" || state === null) return false;
+  return Boolean((state as { focus?: unknown }).focus);
 }

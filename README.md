@@ -191,7 +191,13 @@ hand, because the rest needs a real Obsidian and Electron runtime.
     running. Select it: Pi starts.
 12. Quit Pi with `Ctrl+D`: the pane empties and the tab stays. Click it: a fresh
     session starts.
-13. Unzip a release archive into a vault on a machine with no checkout of this
+13. Give the pane the keyboard three ways and type immediately each time,
+    without clicking again: select its tab from a note, click the idle pane to
+    start a session, and press the toggle-focus key. The first two are the ones
+    that broke before — Obsidian ends activating a pane by asking the view for
+    the keyboard, and a press that starts a session repaints the screen out
+    from under its own click.
+14. Unzip a release archive into a vault on a machine with no checkout of this
     repository, and start a session. This is the one check the packaging script
     cannot make for itself: it verifies the archive's contents and modes, not
     that Obsidian's Electron can load the addon out of it.
