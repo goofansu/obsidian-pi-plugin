@@ -68,8 +68,8 @@ pane kills its process.
 
 Pi keeps a tab in the right sidebar, the way Obsidian's own panes do, so there
 is always somewhere to click. Nothing runs until the pane is asked for: select
-its tab, click in it, or use either command. Opening a vault does not launch an
-agent.
+its tab, click in it, or use either command. Until then the pane shows a short
+tip saying so. Opening a vault does not launch an agent.
 
 Quitting Pi empties the pane and leaves the tab in place; selecting it again
 starts a fresh session. If Pi exits with an error the output stays on screen,

@@ -241,6 +241,8 @@ export class TerminalView extends ItemView {
     }
 
     this.started = true;
+    // The tip has served its purpose; Pi paints from a clean screen.
+    term.write("\x1b[2J\x1b[3J\x1b[H");
 
     // Required lazily so a native addon that fails to load reports itself in
     // the pane instead of preventing the whole plugin from loading.
