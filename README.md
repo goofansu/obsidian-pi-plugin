@@ -65,8 +65,10 @@ pane kills its process.
 
 A pane that Obsidian restores at startup waits rather than starting on its own —
 click it or press a key to start. This is deliberate: opening Obsidian should
-never silently launch an agent. A pane whose process has exited waits the same
-way, so you can restart it without reopening the pane.
+never silently launch an agent.
+
+Quitting Pi closes the pane. If Pi exits with an error the pane stays open
+instead, showing the exit code, and a keystroke restarts it.
 
 ## Build and install
 
@@ -116,8 +118,7 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 9. Drag a live pane into the main editor area: the session continues.
 10. Close a pane mid-response: `ps` shows no orphaned process.
 11. Restart Obsidian: restored panes are idle, and clicking one starts it.
-12. Type `exit` in a shell pane: the exit code is reported, and a keystroke
-    starts a fresh shell in the same pane.
+12. Quit Pi with `Ctrl+D`: the pane closes on its own.
 
 ## Theme
 

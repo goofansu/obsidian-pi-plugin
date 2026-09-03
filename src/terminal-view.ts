@@ -152,8 +152,9 @@ export class TerminalView extends ItemView {
   }
 
   /**
-   * The process is cleared so that later keystrokes are not swallowed by a dead
-   * handle, and the pane can be started again the same way a waiting one is.
+   * Quitting Pi closes the pane, which is what quitting is meant to mean. A
+   * non-zero exit keeps the pane open instead: something went wrong, and the
+   * code on screen is the only evidence of what.
    */
   private handleExit(exitCode: number): void {
     // Safe from inside the handler: node-pty copies its listener list before
@@ -161,6 +162,12 @@ export class TerminalView extends ItemView {
     this.disposeSubscriptions();
     this.process = null;
     this.started = false;
+
+    if (exitCode === 0) {
+      this.leaf.detach();
+      return;
+    }
+
     this.dim(`\r\n[process exited ${exitCode}] Press any key to start again.`);
   }
 
