@@ -1,12 +1,12 @@
 /* Written against the view type, so the pane looks the same in the sidebar
    and in the main editor area. */
-.workspace-leaf-content[data-type="wterm-pi-terminal"] .view-content {
+.workspace-leaf-content[data-type="pi-agent"] .view-content {
   padding: 0;
   overflow: hidden;
   display: flex;
 }
 
-.wterm-pi-host {
+.pi-terminal {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
@@ -20,23 +20,27 @@
    main screen's scrollback, so without this the earlier session is drawn above
    the program and the pane scrolls. Later in the file than the emulator's own
    rules, so it wins on equal specificity without !important. */
-.wterm-pi-host.wterm-pi-alt {
+.pi-terminal.pi-alt-screen {
   overflow-y: hidden;
 }
 
-.wterm-pi-host.wterm-pi-alt .term-scrollback-row,
-.wterm-pi-host.wterm-pi-alt .term-scrollback-spacer {
+.pi-terminal.pi-alt-screen .term-scrollback-row,
+.pi-terminal.pi-alt-screen .term-scrollback-spacer {
   display: none;
 }
 
-/* The palette is Pi's own, copied from the built-in dark.json and light.json
+/* `.wterm` is the emulator library's own class, applied by it to this element.
+   It is the one name here that is not ours to choose, and it appears only where
+   a rule has to reach the library's styling.
+
+   The palette is Pi's own, copied from the built-in dark.json and light.json
    themes, so the agent looks in this pane exactly as it does in a terminal.
    Which of the two is used follows Obsidian's light or dark mode.
 
    The background stays Obsidian's, because Pi's themes deliberately do not set
    one — the TUI inherits whatever the terminal provides — so the pane blends
    with the app while the foreground colours remain Pi's. */
-.wterm-pi-host.wterm {
+.pi-terminal.wterm {
   --term-font-family: var(--font-monospace, ui-monospace, Menlo, monospace);
   --term-font-size: var(--font-ui-small, 13px);
   --term-line-height: 1.3;
@@ -44,7 +48,7 @@
 }
 
 /* Pi's dark theme. */
-.theme-dark .wterm-pi-host.wterm {
+.theme-dark .pi-terminal.wterm {
   --term-fg: #d4d4d4;        /* text */
   --term-cursor: #8abeb7;    /* accent */
 
@@ -68,12 +72,12 @@
   --term-color-15: #ffffff;
 }
 
-.theme-dark .wterm-pi-host.wterm ::selection {
+.theme-dark .pi-terminal.wterm ::selection {
   background: #3a3a4a;       /* selectedBg */
 }
 
 /* Pi's light theme. */
-.theme-light .wterm-pi-host.wterm {
+.theme-light .pi-terminal.wterm {
   --term-fg: #1f2328;        /* text */
   --term-cursor: #5a8080;    /* teal, the light theme's accent */
 
@@ -97,6 +101,6 @@
   --term-color-15: #1f2328;
 }
 
-.theme-light .wterm-pi-host.wterm ::selection {
+.theme-light .pi-terminal.wterm ::selection {
   background: #d0d0e0;       /* selectedBg */
 }

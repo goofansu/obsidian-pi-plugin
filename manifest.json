@@ -1,9 +1,9 @@
 {
-  "id": "wterm-pi",
-  "name": "wterm Pi",
+  "id": "pi-agent",
+  "name": "Pi",
   "version": "0.0.1",
   "minAppVersion": "1.13.7",
-  "description": "A local wterm terminal for Pi, in the Obsidian sidebar.",
+  "description": "Run the Pi coding agent in a sidebar pane, inside your vault.",
   "author": "James",
   "isDesktopOnly": true
 }

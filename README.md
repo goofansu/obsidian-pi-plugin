@@ -1,10 +1,10 @@
-# wterm Pi
+# Pi for Obsidian
 
 A terminal in Obsidian's right sidebar, and a one-command way to hand the note
 you are reading to the Pi coding agent.
 
 Personal, single-machine plugin: Apple Silicon macOS, Obsidian 1.13.7. Not
-distributed. The spec lives in `.scratch/obsidian-wterm-spec.md`.
+distributed. The spec lives in `.scratch/spec.md`.
 
 ## Commands
 
@@ -21,7 +21,7 @@ Rebind the key in Settings → Hotkeys if it clashes with something.
 
 ## Configuration
 
-Settings → Community plugins → wterm Pi:
+Settings → Community plugins → Pi:
 
 - **DeepSeek API key** — required. A pane opened without one says so and waits.
 - **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
@@ -78,12 +78,12 @@ npm run build                    # typechecks, then writes main.js and styles.cs
 npm run install-to -- "/path/to/Vault"
 ```
 
-`install-to` symlinks this folder into the vault's `.obsidian/plugins/wterm-pi`.
+`install-to` symlinks this folder into the vault's `.obsidian/plugins/pi-agent`.
 A symlink rather than a copy matters: `node_modules/node-pty` must be present in
 the installed folder, because the native pseudo-terminal addon is deliberately
 not bundled into `main.js` and is loaded from there at runtime.
 
-Then, in Obsidian: enable community plugins, and enable **wterm Pi**.
+Then, in Obsidian: enable community plugins, and enable **Pi**.
 
 ### If the native addon fails to load
 
@@ -145,7 +145,7 @@ To adjust anything, override the emulator's custom properties in a CSS snippet,
 for example:
 
 ```css
-.wterm-pi-host.wterm { --term-font-size: 15px; }
+.pi-terminal.wterm { --term-font-size: 15px; }
 ```
 
 ## Development

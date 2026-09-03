@@ -115,7 +115,7 @@ export default class WTermPiPlugin extends Plugin {
     const leaf = this.piLeaf();
     const view = leaf?.view;
     if (!(view instanceof TerminalView)) {
-      new Notice("wterm Pi: could not reach Pi");
+      new Notice("Pi: could not reach Pi");
       return;
     }
 
@@ -137,7 +137,7 @@ export default class WTermPiPlugin extends Plugin {
   private async openPi(): Promise<void> {
     const leaf = this.rightSidebarLeaf();
     if (!leaf) {
-      new Notice("wterm Pi: could not open a pane for Pi");
+      new Notice("Pi: could not open a pane for Pi");
       return;
     }
 

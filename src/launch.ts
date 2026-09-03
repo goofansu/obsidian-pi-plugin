@@ -158,5 +158,5 @@ export function agentDirPath(
   vaultRoot: string,
   pluginDir: string | undefined,
 ): string {
-  return `${vaultRoot}/${pluginDir ?? ".obsidian/plugins/wterm-pi"}/pi-agent`;
+  return `${vaultRoot}/${pluginDir ?? ".obsidian/plugins/pi-agent"}/pi-agent`;
 }

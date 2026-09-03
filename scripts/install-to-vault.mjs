@@ -40,7 +40,7 @@ if (lstatSafe(target)) rmSync(target, { recursive: true, force: true });
 symlinkSync(source, target, "dir");
 
 console.log(`Linked ${source}\n     -> ${target}`);
-console.log("Enable community plugins in Obsidian, then enable “wterm Pi”.");
+console.log("Enable community plugins in Obsidian, then enable “Pi”.");
 
 function lstatSafe(path) {
   try {

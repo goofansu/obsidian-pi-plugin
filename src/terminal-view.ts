@@ -12,7 +12,7 @@ import { bracketedPaste } from "./paste.js";
 import type { Settings } from "./settings.js";
 import { TerminalQueryFilter } from "./terminal-queries.js";
 
-export const TERMINAL_VIEW_TYPE = "wterm-pi-terminal";
+export const TERMINAL_VIEW_TYPE = "pi-agent";
 
 type Subscription = { dispose(): void };
 
@@ -75,7 +75,7 @@ export class TerminalView extends ItemView {
       return;
     }
 
-    const host = this.contentEl.createDiv({ cls: "wterm-pi-host" });
+    const host = this.contentEl.createDiv({ cls: "pi-terminal" });
     this.host = host;
 
     // The callbacks are supplied up front so the terminal never handles input
@@ -201,7 +201,7 @@ export class TerminalView extends ItemView {
     if (alt === this.altScreen) return;
 
     this.altScreen = alt;
-    this.host?.classList.toggle("wterm-pi-alt", alt);
+    this.host?.classList.toggle("pi-alt-screen", alt);
     // The alternate screen starts at the top; any inherited scroll offset
     // would leave the program drawn partly out of view.
     if (alt && this.host) this.host.scrollTop = 0;
@@ -239,7 +239,7 @@ export class TerminalView extends ItemView {
     const settings = this.readSettings();
     if (!settings.apiKey) {
       this.dim(
-        "[not configured] Add your DeepSeek API key in Settings \u2192 Community plugins \u2192 wterm Pi, then press any key.",
+        "[not configured] Add your DeepSeek API key in Settings \u2192 Community plugins \u2192 Pi, then press any key.",
       );
       return;
     }
@@ -322,7 +322,7 @@ function obsidianAppearance(el: HTMLElement): Appearance {
 function vaultRootOf(view: ItemView): string {
   const adapter = view.app.vault.adapter;
   if (!(adapter instanceof FileSystemAdapter)) {
-    throw new Error("wterm Pi requires a filesystem-backed vault");
+    throw new Error("Pi requires a filesystem-backed vault");
   }
   return adapter.getBasePath();
 }

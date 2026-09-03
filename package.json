@@ -2,7 +2,7 @@
   "name": "obsidian-pi-plugin",
   "version": "0.0.1",
   "private": true,
-  "description": "A local wterm terminal for Pi, inside Obsidian.",
+  "description": "Run the Pi coding agent in an Obsidian sidebar pane.",
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && node esbuild.config.mjs production",
