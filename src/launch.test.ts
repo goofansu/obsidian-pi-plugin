@@ -22,7 +22,15 @@ const resolve = (
   launch: Launch,
   processEnv: NodeJS.ProcessEnv = {},
   settings: Settings = SETTINGS,
-) => resolveLaunch(launch, { vaultRoot: VAULT, agentDir: AGENT_DIR, settings, processEnv });
+  appearance: "light" | "dark" = "dark",
+) =>
+  resolveLaunch(launch, {
+    vaultRoot: VAULT,
+    agentDir: AGENT_DIR,
+    settings,
+    appearance,
+    processEnv,
+  });
 
 describe("resolveLaunch — command and arguments", () => {
   it("runs pi by absolute path", () => {
@@ -43,6 +51,15 @@ describe("resolveLaunch — command and arguments", () => {
     expect(resolve({}).args).toContain("--no-skills");
     expect(resolve({ notePath: "a.md" }).args).toContain("--no-skills");
   });
+
+  it.each(["light", "dark"] as const)(
+    "asks pi for the %s theme, matching Obsidian",
+    (appearance) => {
+      const args = resolve({}, {}, SETTINGS, appearance).args;
+
+      expect(args[args.indexOf("--use-theme") + 1]).toBe(appearance);
+    },
+  );
 
   it("selects the configured model, and offers both for cycling", () => {
     const args = resolve({}, {}, { apiKey: "sk", model: "deepseek-v4-pro" }).args;

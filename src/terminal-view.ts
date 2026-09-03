@@ -18,6 +18,7 @@ import {
   parseLaunch,
   resolveLaunch,
   serializeLaunch,
+  type Appearance,
   type Launch,
 } from "./launch.js";
 
@@ -196,6 +197,7 @@ export class TerminalView extends ItemView {
       vaultRoot,
       agentDir,
       settings,
+      appearance: obsidianAppearance(this.containerEl),
       processEnv: process.env,
     });
 
@@ -228,6 +230,14 @@ export class TerminalView extends ItemView {
     this.process = proc;
     term.focus();
   }
+}
+
+/**
+ * Read at spawn time from the document Obsidian marks with its current mode.
+ * Switching theme affects sessions started afterwards, not running ones.
+ */
+function obsidianAppearance(el: HTMLElement): Appearance {
+  return el.ownerDocument.body.classList.contains("theme-dark") ? "dark" : "light";
 }
 
 function vaultRootOf(view: ItemView): string {

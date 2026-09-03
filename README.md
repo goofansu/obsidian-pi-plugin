@@ -106,7 +106,14 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 
 ## Theme
 
-The palette is Pi's own, copied from its built-in `dark.json` and `light.json`
+Pi is started with its own `light` or `dark` theme to match Obsidian's current
+mode. Pi normally chooses by asking the terminal for its background colour; this
+emulator does not answer that, so without being told it would always assume dark.
+The mode is read when a session starts, so switching Obsidian's theme applies to
+panes opened afterwards, not to running ones.
+
+The sixteen ANSI colours are handled separately by the stylesheet. The palette
+there is Pi's own, copied from its built-in `dark.json` and `light.json`
 themes, so Pi looks here as it does in a terminal. Obsidian's light or dark mode
 picks which one applies, switching with no restart. The background stays
 Obsidian's — Pi's themes set none, inheriting the terminal's — so the pane blends
