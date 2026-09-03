@@ -16,6 +16,9 @@ export const PI_COMMAND = "/Users/james/.npm-global/bin/pi";
  */
 export const EDITOR_COMMAND = "/usr/bin/vi";
 
+/** Any UTF-8 locale will do; this one is present on macOS. */
+export const LOCALE = "en_US.UTF-8";
+
 /**
  * Pi is a Node script started through a `#!/usr/bin/env node` line, so `node`
  * itself must be findable. Obsidian launched from the Finder inherits a bare
@@ -118,6 +121,12 @@ function resolveEnv(
   env.COLORTERM = "truecolor";
   env.EDITOR = EDITOR_COMMAND;
   env.VISUAL = EDITOR_COMMAND;
+
+  // Without a UTF-8 locale, terminal programs fall back to latin1 and render
+  // multi-byte characters as mojibake — vim shows a UTF-8 apostrophe as three
+  // stray glyphs. Obsidian launched from the Finder passes no locale at all.
+  env.LANG = LOCALE;
+  env.LC_ALL = LOCALE;
 
   // PI_CODING_AGENT_DIR alone isolates settings, credentials, extensions,
   // skills, sessions, and trust. PI_PACKAGE_DIR is deliberately not set: it

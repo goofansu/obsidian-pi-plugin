@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   EDITOR_COMMAND,
+  LOCALE,
   PI_COMMAND,
   agentDirPath,
   nodePtyPath,
@@ -172,6 +173,23 @@ describe("resolveLaunch — the external editor", () => {
 
     expect(spec.env.EDITOR).toBe(EDITOR_COMMAND);
     expect(spec.env.VISUAL).toBe(EDITOR_COMMAND);
+  });
+});
+
+describe("resolveLaunch — the locale", () => {
+  it("declares a UTF-8 locale, without which programs render mojibake", () => {
+    const spec = resolve();
+
+    expect(spec.env.LANG).toBe(LOCALE);
+    expect(spec.env.LC_ALL).toBe(LOCALE);
+    expect(LOCALE).toMatch(/UTF-8$/);
+  });
+
+  it("overrides a non-UTF-8 locale inherited from the environment", () => {
+    const spec = resolve({ LANG: "C", LC_ALL: "POSIX" });
+
+    expect(spec.env.LANG).toBe(LOCALE);
+    expect(spec.env.LC_ALL).toBe(LOCALE);
   });
 });
 

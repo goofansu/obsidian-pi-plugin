@@ -6,7 +6,7 @@ import {
 } from "obsidian";
 import { WTerm } from "@wterm/dom";
 import { mkdirSync } from "node:fs";
-import { DeviceAttributeResponder } from "./device-attributes.js";
+import { TerminalQueryFilter } from "./terminal-queries.js";
 import { bracketedPaste } from "./paste.js";
 import type { Settings } from "./settings.js";
 import type { IPty } from "node-pty";
@@ -28,7 +28,7 @@ export class TerminalView extends ItemView {
   private subscriptions: Subscription[] = [];
   private started = false;
   private autostart = false;
-  private deviceAttributes = new DeviceAttributeResponder();
+  private queries = new TerminalQueryFilter();
   private pendingPaste: string | null = null;
   private settleTimer: number | null = null;
 
@@ -255,17 +255,17 @@ export class TerminalView extends ItemView {
 
     this.subscriptions.push(
       proc.onData((data) => {
-        term.write(data);
-        if (this.pendingPaste) this.deliverPasteWhenSettled(proc);
-        // The emulator does not answer device attribute queries; fish blocks
-        // for ten seconds waiting on one, so answer on its behalf.
-        const reply = this.deviceAttributes.respond(data);
+        // Filtered before display: some queries the core cannot handle would
+        // otherwise be printed as text, and some need an answer.
+        const { text, reply } = this.queries.process(data);
+        if (text) term.write(text);
         if (reply) proc.write(reply);
+        if (this.pendingPaste) this.deliverPasteWhenSettled(proc);
       }),
       proc.onExit(({ exitCode }) => this.handleExit(exitCode)),
     );
 
-    this.deviceAttributes = new DeviceAttributeResponder();
+    this.queries = new TerminalQueryFilter();
     this.process = proc;
     term.focus();
   }
