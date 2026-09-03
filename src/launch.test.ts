@@ -37,6 +37,13 @@ describe("resolveLaunch — command and arguments", () => {
     expect(resolve({ notePath: "a.md" }).args).toContain("--no-approve");
   });
 
+  it("loads no skills on every launch", () => {
+    // The private config directory cannot cover this: skills also come from
+    // ~/.agents/skills and from .agents/skills above the working directory.
+    expect(resolve({}).args).toContain("--no-skills");
+    expect(resolve({ notePath: "a.md" }).args).toContain("--no-skills");
+  });
+
   it("selects the configured model, and offers both for cycling", () => {
     const args = resolve({}, {}, { apiKey: "sk", model: "deepseek-v4-pro" }).args;
 

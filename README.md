@@ -40,6 +40,9 @@ This plugin's Pi does not share anything with a Pi you have installed yourself:
 - every `PI_*` variable in the environment is dropped before it starts, along
   with any `DEEPSEEK_API_KEY`, so nothing ambient leaks in;
 - `--no-approve` makes it ignore project-local `.pi` files inside the vault;
+- `--no-skills` disables skill loading entirely, which the separate
+  configuration directory cannot do on its own — skills are also discovered from
+  `~/.agents/skills` and from `.agents/skills` above the working directory;
 - `PI_OFFLINE` suppresses update checks and telemetry, but not model requests.
 
 Your own `~/.pi` is never read or written by this plugin.

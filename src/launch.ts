@@ -20,11 +20,13 @@ export const PATH_PREPEND = [
 ];
 
 /**
- * Ignore project-local `.pi` settings, resources, and extensions found in the
- * vault. Together with a private config directory this keeps the agent's
- * configuration entirely the plugin's own.
+ * `--no-approve` ignores project-local `.pi` settings, resources, and extensions
+ * found in the vault. `--no-skills` disables skill loading outright, which the
+ * private config directory alone cannot do: skills are also discovered from
+ * `~/.agents/skills` and from `.agents/skills` in the working directory and its
+ * parents, none of which move with `PI_CODING_AGENT_DIR`.
  */
-export const PI_ARGS = ["--no-approve"];
+export const PI_ARGS = ["--no-approve", "--no-skills"];
 
 import {
   API_KEY_ENV,
