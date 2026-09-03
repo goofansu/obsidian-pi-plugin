@@ -3,9 +3,38 @@
 A terminal in Obsidian's right sidebar, and a one-command way to hand the note
 you are reading to the Pi coding agent.
 
-Personal, single-machine plugin: Apple Silicon macOS, Obsidian 1.13.7. Not
-distributed. The spec lives in `.scratch/spec.md`; the original research that
-preceded it is in `docs/research.md`.
+macOS only, Obsidian 1.13.7 or newer. Built and used on Apple Silicon; the
+Intel binaries are shipped but untested. The spec lives in `.scratch/spec.md`;
+the original research that preceded it is in `docs/research.md`.
+
+## Install
+
+Each release carries one archive, `obsidian-pi-plugin-<version>-macos.zip`,
+which is the finished plugin folder with the native pseudo-terminal addon
+already inside it. There is nothing to clone and nothing to build.
+
+1. Download the zip from the
+   [latest release](https://github.com/goofansu/obsidian-pi-plugin/releases/latest).
+2. Unzip it into your vault's `.obsidian/plugins/`, so the plugin lands at
+   `<Vault>/.obsidian/plugins/obsidian-pi-plugin/`.
+3. Clear the quarantine flag your browser attached to the download:
+
+   ```bash
+   xattr -dr com.apple.quarantine "<Vault>/.obsidian/plugins/obsidian-pi-plugin"
+   ```
+
+   Harmless if there is none, and it saves a puzzling `Could not load node-pty`
+   should macOS decide to enforce it against the unsigned addon.
+4. In Obsidian: Settings → Community plugins, turn them on if they are off,
+   then enable **Pi**.
+5. Configure the plugin, below. **Extra PATH directories** is normally
+   required, and the **DeepSeek API key** always is.
+
+Obsidian's own community-plugin installer could not deliver this plugin: it
+fetches `main.js`, `manifest.json`, and `styles.css` and nothing else, and this
+plugin also needs `node_modules/node-pty` in its folder. Hence the zip.
+
+Pi itself is not in the archive. The plugin runs the `pi` on your `PATH`.
 
 ## Commands
 
@@ -81,10 +110,10 @@ Quitting Pi empties the pane and leaves the tab in place; selecting it again
 starts a fresh session. If Pi exits with an error the output stays on screen,
 showing the exit code, and a keystroke restarts it.
 
-## Build and install
+## Build from source
 
 ```bash
-npm install                      # also makes node-pty's spawn-helper executable
+npm install                      # also makes node-pty's spawn-helpers executable
 npm run build                    # typechecks, then writes main.js and styles.css
 npm run install-to -- "/path/to/Vault"
 ```
@@ -99,14 +128,44 @@ Then, in Obsidian: enable community plugins, and enable **Pi**.
 ### If the native addon fails to load
 
 The pane will show `[error] Could not load node-pty: …` rather than the plugin
-failing to load. The remedy is to rebuild that one module against Obsidian's
-Electron version:
+failing to load. From an unzipped release, try clearing the quarantine flag
+first, as in the install steps above. Otherwise the remedy is to rebuild that
+one module against Obsidian's Electron version:
 
 ```bash
 npx @electron/rebuild -v 43.3.0 -f -o node-pty
 ```
 
 Do not introduce a binary download system unless this proves insufficient.
+
+## Releasing
+
+A pushed version tag publishes a release. `.github/workflows/release.yml` runs
+the lint, the tests, and the build on a macOS runner, then packages the archive
+and attaches it to a new GitHub release.
+
+```bash
+# bump the version in both manifest.json and package.json first
+git tag 0.0.2 && git push origin 0.0.2
+```
+
+The tag has to match `manifest.json`, and `manifest.json` has to match
+`package.json`; the packaging script fails the run otherwise. Tags may be
+written `0.0.2` or `v0.0.2`.
+
+To see what a release would contain without tagging anything:
+
+```bash
+npm run build && npm run package   # writes dist/, and checks the archive
+```
+
+`scripts/package-macos.mjs` copies the three plugin files and the parts of
+node-pty a running pane touches — its `lib/` and the two macOS prebuilds,
+leaving behind the addon sources and 58 MB of Windows binaries — makes both
+`spawn-helper` binaries executable, and zips the folder with `ditto`, which
+keeps those modes and the prebuilt binaries' adhoc signatures. It then reads
+the modes back out of the finished zip, because a lost executable bit is the
+one mistake that would otherwise surface only when a session refuses to start.
 
 ## Verification checklist
 
@@ -132,6 +191,10 @@ hand, because the rest needs a real Obsidian and Electron runtime.
     running. Select it: Pi starts.
 12. Quit Pi with `Ctrl+D`: the pane empties and the tab stays. Click it: a fresh
     session starts.
+13. Unzip a release archive into a vault on a machine with no checkout of this
+    repository, and start a session. This is the one check the packaging script
+    cannot make for itself: it verifies the archive's contents and modes, not
+    that Obsidian's Electron can load the addon out of it.
 
 ## Theme
 

@@ -1,0 +1,78 @@
+name: Release
+
+# Tags are the trigger: pushing 0.0.1 (or v0.0.1) builds the macOS archive and
+# publishes it. The version in the tag has to match manifest.json, which the
+# packaging script checks before it writes anything.
+on:
+  push:
+    tags: ["*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    # macOS because the archive is built with ditto, and because the plugin
+    # runs nowhere else. One runner covers both architectures: node-pty
+    # publishes Apple Silicon and Intel prebuilds in the same package, so
+    # whichever machine GitHub hands out produces the same archive.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm test
+
+      - run: npm run build
+
+      - name: Package the plugin folder
+        env:
+          TAG: ${{ github.ref_name }}
+        run: npm run package -- --tag "$TAG"
+
+      - name: Write the release notes
+        run: |
+          cat > release-notes.md <<'EOF'
+          A macOS plugin folder, ready to unzip. It carries node-pty's macOS
+          pseudo-terminal addon, which Obsidian's own plugin installer would
+          not deliver, so there is nothing to build and nothing to clone.
+
+          ## Install
+
+          1. Download the zip below.
+          2. Unzip it into `<Vault>/.obsidian/plugins/`, so that the plugin
+             lands at `<Vault>/.obsidian/plugins/obsidian-pi-plugin/`.
+          3. Clear the quarantine flag your browser attached to the
+             download. Harmless if there is none, and it saves a puzzling
+             `Could not load node-pty` if macOS decides to enforce it against
+             the unsigned addon:
+
+                 xattr -dr com.apple.quarantine "<Vault>/.obsidian/plugins/obsidian-pi-plugin"
+
+          4. In Obsidian: Settings → Community plugins → turn them on if they
+             are off, then enable **Pi**.
+          5. In Settings → Community plugins → Pi, fill in **Extra PATH
+             directories** so the plugin can find `pi` and `node`, and the
+             **DeepSeek API key**.
+
+          Requires macOS, Obsidian 1.13.7 or newer, and `pi` on disk — Pi
+          itself is not part of this archive.
+          EOF
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/*.zip \
+            --title "$TAG" \
+            --notes-file release-notes.md \
+            --verify-tag

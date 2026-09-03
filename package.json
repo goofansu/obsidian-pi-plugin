@@ -10,7 +10,8 @@
     "install-to": "node scripts/install-to-vault.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "postinstall": "chmod +x node_modules/node-pty/prebuilds/darwin-arm64/spawn-helper",
+    "package": "node scripts/package-macos.mjs",
+    "postinstall": "node scripts/spawn-helper.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
