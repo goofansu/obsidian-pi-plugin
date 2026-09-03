@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PASTE_END, PASTE_START, bracketedPaste } from "./paste.js";
+import { bracketedPaste, PASTE_END, PASTE_START } from "./paste.js";
 
 describe("sending selected text to pi", () => {
   it("wraps the text in a bracketed paste, which pi has enabled", () => {
@@ -15,18 +15,27 @@ describe("sending selected text to pi", () => {
   });
 
   it("never ends with a carriage return, so nothing is submitted for the user", () => {
-    for (const text of ["one line", "trailing newline\n", "windows\r\n", "bare\r"]) {
+    for (const text of [
+      "one line",
+      "trailing newline\n",
+      "windows\r\n",
+      "bare\r",
+    ]) {
       const payload = bracketedPaste(text);
       expect(payload?.endsWith(`\r${PASTE_END}`)).toBe(false);
     }
   });
 
   it("normalises windows and classic-mac line endings", () => {
-    expect(bracketedPaste("a\r\nb\rc")).toBe(`${PASTE_START}a\nb\nc${PASTE_END}`);
+    expect(bracketedPaste("a\r\nb\rc")).toBe(
+      `${PASTE_START}a\nb\nc${PASTE_END}`,
+    );
   });
 
   it("preserves interior blank lines, which carry meaning in a note", () => {
-    expect(bracketedPaste("para one\n\npara two")).toContain("para one\n\npara two");
+    expect(bracketedPaste("para one\n\npara two")).toContain(
+      "para one\n\npara two",
+    );
   });
 
   it("passes terminal escape sequences through as literal text", () => {
@@ -43,6 +52,8 @@ describe("sending selected text to pi", () => {
   });
 
   it("keeps text that only looks empty at the edges", () => {
-    expect(bracketedPaste("  hello  ")).toBe(`${PASTE_START}  hello  ${PASTE_END}`);
+    expect(bracketedPaste("  hello  ")).toBe(
+      `${PASTE_START}  hello  ${PASTE_END}`,
+    );
   });
 });

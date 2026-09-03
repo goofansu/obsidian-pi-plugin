@@ -1,9 +1,15 @@
-import { Notice, Plugin, PluginSettingTab, Setting, type WorkspaceLeaf } from "obsidian";
+import {
+  Notice,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  type WorkspaceLeaf,
+} from "obsidian";
 import {
   DEFAULT_SETTINGS,
   MODELS,
-  parseSettings,
   type ModelId,
+  parseSettings,
   type Settings,
 } from "./settings.js";
 import { TERMINAL_VIEW_TYPE, TerminalView } from "./terminal-view.js";
@@ -98,7 +104,8 @@ export default class WTermPiPlugin extends Plugin {
    * has focus, so this works while the keyboard is already in Pi.
    */
   private async sendSelectionToPi(): Promise<void> {
-    const selection = this.app.workspace.activeEditor?.editor?.getSelection() ?? "";
+    const selection =
+      this.app.workspace.activeEditor?.editor?.getSelection() ?? "";
     if (selection.trim() === "") {
       new Notice("Select some text in a note first");
       return;
@@ -144,7 +151,9 @@ export default class WTermPiPlugin extends Plugin {
 
   /** There is one Pi session, so a sidebar leaf is only ever created once. */
   private rightSidebarLeaf(): WorkspaceLeaf | null {
-    return this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf("tab");
+    return (
+      this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf("tab")
+    );
   }
 }
 
@@ -175,7 +184,9 @@ class WTermPiSettingTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Model")
-      .setDesc("Applies to sessions started from now on. Both models can be cycled inside a session.")
+      .setDesc(
+        "Applies to sessions started from now on. Both models can be cycled inside a session.",
+      )
       .addDropdown((dropdown) => {
         for (const model of MODELS) dropdown.addOption(model.id, model.name);
         dropdown

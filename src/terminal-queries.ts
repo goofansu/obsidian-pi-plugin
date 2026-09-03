@@ -24,10 +24,14 @@ const ST = `${ESC}\\`;
 /** Enough to hold the longest query while it is still arriving. */
 const MAX_PENDING = 256;
 
+// The control characters are the point: these match terminal escape sequences,
+// which begin with ESC and can end with ST or BEL.
+// biome-ignore-start lint/suspicious/noControlCharactersInRegex: matching escape sequences
 const DEVICE_ATTRIBUTES = /^\x1b\[(>?)([0-9;]*)c/;
 const CAPABILITY_QUERY = /^\x1bP\+q([0-9a-fA-F;]*)(?:\x1b\\|\x07)/;
 /** A trailing fragment that could still turn into either query. */
 const PARTIAL = /\x1b(\[[>0-9;]*|P\+?q?[0-9a-fA-F;]*\x1b?)?$/;
+// biome-ignore-end lint/suspicious/noControlCharactersInRegex: matching escape sequences
 
 export type Filtered = {
   /** What should reach the terminal. */

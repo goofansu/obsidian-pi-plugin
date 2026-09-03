@@ -53,7 +53,9 @@ describe("parseSettings is total", () => {
   });
 
   it("keeps a stored key and model", () => {
-    expect(parseSettings({ apiKey: "sk-abc", model: "deepseek-v4-pro" })).toEqual({
+    expect(
+      parseSettings({ apiKey: "sk-abc", model: "deepseek-v4-pro" }),
+    ).toEqual({
       apiKey: "sk-abc",
       model: "deepseek-v4-pro",
     });

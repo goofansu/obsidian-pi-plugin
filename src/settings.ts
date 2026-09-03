@@ -46,7 +46,8 @@ export function parseSettings(stored: unknown): Settings {
 
   const { apiKey, model } = stored as { apiKey?: unknown; model?: unknown };
   return {
-    apiKey: typeof apiKey === "string" ? apiKey.trim() : DEFAULT_SETTINGS.apiKey,
+    apiKey:
+      typeof apiKey === "string" ? apiKey.trim() : DEFAULT_SETTINGS.apiKey,
     model: isModelId(model) ? model : DEFAULT_SETTINGS.model,
   };
 }

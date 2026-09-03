@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  agentDirPath,
   EDITOR_COMMAND,
   LOCALE,
-  PI_COMMAND,
-  agentDirPath,
   nodePtyPath,
+  PI_COMMAND,
   resolveLaunch,
 } from "./launch.js";
 import { API_KEY_ENV, DEFAULT_SETTINGS, type Settings } from "./settings.js";
@@ -73,9 +73,6 @@ describe("resolveLaunch — command and arguments", () => {
     );
   });
 
-
-
-
   it("always runs in the vault root", () => {
     expect(resolve().cwd).toBe(VAULT);
     expect(resolve().cwd).toBe(VAULT);
@@ -84,9 +81,11 @@ describe("resolveLaunch — command and arguments", () => {
 
 describe("resolveLaunch — the api key", () => {
   it("passes the configured key in the variable pi reads", () => {
-    expect(resolve({}, { apiKey: "sk-live", model: "deepseek-v4-flash" }).env[
-      API_KEY_ENV
-    ]).toBe("sk-live");
+    expect(
+      resolve({}, { apiKey: "sk-live", model: "deepseek-v4-flash" }).env[
+        API_KEY_ENV
+      ],
+    ).toBe("sk-live");
   });
 
   it("never puts the key on the command line", () => {
@@ -108,10 +107,13 @@ describe("resolveLaunch — the api key", () => {
   });
 
   it("prefers the configured key over an inherited one", () => {
-    const spec = resolve({ [API_KEY_ENV]: "sk-ambient" }, {
-      apiKey: "sk-configured",
-      model: "deepseek-v4-flash",
-    });
+    const spec = resolve(
+      { [API_KEY_ENV]: "sk-ambient" },
+      {
+        apiKey: "sk-configured",
+        model: "deepseek-v4-flash",
+      },
+    );
 
     expect(spec.env[API_KEY_ENV]).toBe("sk-configured");
   });
@@ -129,15 +131,13 @@ describe("resolveLaunch — a self-contained agent", () => {
   });
 
   it("drops every PI_ variable inherited from the user's environment", () => {
-    const spec = resolve(
-      {
-        PI_KEY: "the-user-system-key",
-        PI_MODEL: "something-else",
-        PI_CODING_AGENT_DIR: "/Users/james/.pi/agent",
-        PI_PACKAGE_DIR: "/Users/james/.pi/packages",
-        PI_OFFLINE: "0",
-      },
-    );
+    const spec = resolve({
+      PI_KEY: "the-user-system-key",
+      PI_MODEL: "something-else",
+      PI_CODING_AGENT_DIR: "/Users/james/.pi/agent",
+      PI_PACKAGE_DIR: "/Users/james/.pi/packages",
+      PI_OFFLINE: "0",
+    });
 
     expect(spec.env.PI_KEY).toBeUndefined();
     expect(spec.env.PI_MODEL).toBeUndefined();
@@ -228,13 +228,17 @@ describe("resolveLaunch — environment", () => {
       PATH: "/etc/profiles/per-user/james/bin:/bin",
     }).env.PATH.split(":");
 
-    expect(dirs.filter((d) => d === "/etc/profiles/per-user/james/bin")).toHaveLength(1);
+    expect(
+      dirs.filter((d) => d === "/etc/profiles/per-user/james/bin"),
+    ).toHaveLength(1);
   });
 });
 
 describe("locating plugin-relative paths", () => {
   it("builds the node-pty path from the vault root and the plugin folder", () => {
-    expect(nodePtyPath("/Users/james/Vault", ".obsidian/plugins/wterm-pi")).toBe(
+    expect(
+      nodePtyPath("/Users/james/Vault", ".obsidian/plugins/wterm-pi"),
+    ).toBe(
       "/Users/james/Vault/.obsidian/plugins/wterm-pi/node_modules/node-pty",
     );
   });
@@ -245,9 +249,9 @@ describe("locating plugin-relative paths", () => {
   });
 
   it("keeps the agent directory inside the plugin folder", () => {
-    expect(agentDirPath("/Users/james/Vault", ".obsidian/plugins/wterm-pi")).toBe(
-      "/Users/james/Vault/.obsidian/plugins/wterm-pi/pi-agent",
-    );
+    expect(
+      agentDirPath("/Users/james/Vault", ".obsidian/plugins/wterm-pi"),
+    ).toBe("/Users/james/Vault/.obsidian/plugins/wterm-pi/pi-agent");
   });
 
   it("still produces an agent directory when the plugin folder is unknown", () => {
@@ -256,7 +260,3 @@ describe("locating plugin-relative paths", () => {
     );
   });
 });
-
-
-
-

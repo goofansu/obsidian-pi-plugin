@@ -145,14 +145,18 @@ function resolveEnv(
  * installed plugin folder. The addon is therefore required by absolute path,
  * built from the vault root and the plugin's own folder.
  */
-export function nodePtyPath(vaultRoot: string, pluginDir: string | undefined): string {
+export function nodePtyPath(
+  vaultRoot: string,
+  pluginDir: string | undefined,
+): string {
   if (!pluginDir) return "node-pty";
   return `${vaultRoot}/${pluginDir}/node_modules/node-pty`;
 }
 
 /** The plugin's private Pi configuration directory, inside the plugin folder. */
-export function agentDirPath(vaultRoot: string, pluginDir: string | undefined): string {
+export function agentDirPath(
+  vaultRoot: string,
+  pluginDir: string | undefined,
+): string {
   return `${vaultRoot}/${pluginDir ?? ".obsidian/plugins/wterm-pi"}/pi-agent`;
 }
-
-

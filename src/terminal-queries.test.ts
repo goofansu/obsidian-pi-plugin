@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DA1_REPLY, DA2_REPLY, TerminalQueryFilter } from "./terminal-queries.js";
+import {
+  DA1_REPLY,
+  DA2_REPLY,
+  TerminalQueryFilter,
+} from "./terminal-queries.js";
 
 const run = (...chunks: string[]) => {
   const filter = new TerminalQueryFilter();

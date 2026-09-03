@@ -4,7 +4,14 @@
  *
  *   npm run install-to -- "/path/to/Vault"
  */
-import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+} from "node:fs";
 import { resolve } from "node:path";
 
 const vault = process.argv[2];

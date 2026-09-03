@@ -1,12 +1,15 @@
-import esbuild from "esbuild";
 import { readFileSync, writeFileSync } from "node:fs";
 import builtins from "builtin-modules";
+import esbuild from "esbuild";
 
 const production = process.argv[2] === "production";
 
 /** styles.css is the emulator's own stylesheet plus this plugin's sizing rules. */
 function buildStyles() {
-  const vendor = readFileSync("node_modules/@wterm/dom/src/terminal.css", "utf8");
+  const vendor = readFileSync(
+    "node_modules/@wterm/dom/src/terminal.css",
+    "utf8",
+  );
   const own = readFileSync("src/plugin.css", "utf8");
   writeFileSync(
     "styles.css",

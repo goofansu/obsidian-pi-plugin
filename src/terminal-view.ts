@@ -1,16 +1,16 @@
-import { FileSystemAdapter, ItemView, type WorkspaceLeaf } from "obsidian";
-import { WTerm } from "@wterm/dom";
 import { mkdirSync } from "node:fs";
-import { TerminalQueryFilter } from "./terminal-queries.js";
-import { bracketedPaste } from "./paste.js";
-import type { Settings } from "./settings.js";
+import { WTerm } from "@wterm/dom";
 import type { IPty } from "node-pty";
+import { FileSystemAdapter, ItemView, type WorkspaceLeaf } from "obsidian";
 import {
+  type Appearance,
   agentDirPath,
   nodePtyPath,
   resolveLaunch,
-  type Appearance,
 } from "./launch.js";
+import { bracketedPaste } from "./paste.js";
+import type { Settings } from "./settings.js";
+import { TerminalQueryFilter } from "./terminal-queries.js";
 
 export const TERMINAL_VIEW_TYPE = "wterm-pi-terminal";
 
@@ -256,7 +256,9 @@ export class TerminalView extends ItemView {
       agentDir = agentDirPath(vaultRoot, this.pluginDir);
       // Pi writes its settings, credentials, and sessions here; it must exist.
       mkdirSync(agentDir, { recursive: true });
-      ({ spawn } = require(nodePtyPath(vaultRoot, this.pluginDir)) as typeof import("node-pty"));
+      ({ spawn } = require(
+        nodePtyPath(vaultRoot, this.pluginDir),
+      ) as typeof import("node-pty"));
     } catch (error) {
       this.failToStart(`Could not start the agent: ${errorMessage(error)}`);
       return;
@@ -280,7 +282,9 @@ export class TerminalView extends ItemView {
         env: spec.env,
       });
     } catch (error) {
-      this.failToStart(`Could not start ${spec.command}: ${errorMessage(error)}`);
+      this.failToStart(
+        `Could not start ${spec.command}: ${errorMessage(error)}`,
+      );
       return;
     }
 
@@ -310,7 +314,9 @@ export class TerminalView extends ItemView {
  * Switching theme affects sessions started afterwards, not running ones.
  */
 function obsidianAppearance(el: HTMLElement): Appearance {
-  return el.ownerDocument.body.classList.contains("theme-dark") ? "dark" : "light";
+  return el.ownerDocument.body.classList.contains("theme-dark")
+    ? "dark"
+    : "light";
 }
 
 function vaultRootOf(view: ItemView): string {
