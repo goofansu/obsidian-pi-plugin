@@ -240,6 +240,9 @@ export class TerminalView extends ItemView {
         "",
         `  ${dim}Click here to begin.${off}`,
         "",
+        // Nothing is accepting input yet, so a cursor would only suggest
+        // otherwise. Pi shows and places its own once it starts.
+        "\x1b[?25l",
       ].join("\r\n"),
     );
   }
@@ -267,8 +270,9 @@ export class TerminalView extends ItemView {
     }
 
     this.started = true;
-    // The tip has served its purpose; Pi paints from a clean screen.
-    term.write("\x1b[2J\x1b[3J\x1b[H");
+    // The tip has served its purpose; Pi paints from a clean screen, with the
+    // cursor restored so it is not left hidden if the process never shows it.
+    term.write("\x1b[2J\x1b[3J\x1b[H\x1b[?25h");
 
     // Required lazily so a native addon that fails to load reports itself in
     // the pane instead of preventing the whole plugin from loading.
