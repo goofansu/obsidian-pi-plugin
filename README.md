@@ -8,12 +8,15 @@ distributed. The spec lives in `.scratch/obsidian-wterm-spec.md`.
 
 ## Commands
 
-| Command | What it runs |
-| --- | --- |
-| **Open terminal** | Pi in the vault root, with no note argument |
-| **Open Pi for current note** | Pi in the vault root, with the active note as an `@file` argument |
+| Command | Default key | What it does |
+| --- | --- | --- |
+| **Show or hide Pi** | — | Opens the Pi pane, or closes it if it is open |
+| **Jump between your note and Pi** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi. Opens Pi if it is not open. |
 
-There is no shell command; this pane runs Pi and nothing else.
+One session, in the right sidebar, running in your vault. There is no shell
+command and no per-note command: Pi reads any note it needs with its own tools.
+
+Rebind the key in Settings → Hotkeys if it clashes with something.
 
 ## Configuration
 
@@ -96,8 +99,8 @@ hand, because the rest needs a real Obsidian and Electron runtime.
    Device Attribute query" warning.
 3. Plain output, `vim`, and colour render correctly.
 4. Drag the sidebar wider: the terminal reflows and `vim` redraws at the new size.
-5. Run **Open Pi for current note** from an open note: Pi starts with that note in
-   context, and the note captured is the one you were reading — not the terminal.
+5. From a note, press `Cmd+Shift+/`: focus lands in Pi. Press it again: focus
+   returns to the note. Press it with Pi closed: Pi opens and takes focus.
 6. The shell pane and the Pi pane coexist as separate sidebar tabs.
 7. Ask Pi to read a second note in the vault.
 8. Drag a live pane into the main editor area: the session continues.

@@ -41,8 +41,6 @@ import {
   type Settings,
 } from "./settings.js";
 
-export type Launch = { notePath?: string };
-
 export type SpawnSpec = {
   command: string;
   args: string[];
@@ -62,7 +60,7 @@ export type LaunchContext = {
   processEnv: NodeJS.ProcessEnv;
 };
 
-export function resolveLaunch(launch: Launch, ctx: LaunchContext): SpawnSpec {
+export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
   const args = [
     ...PI_ARGS,
     // Pi picks a theme by probing the terminal's background colour, which this
@@ -76,8 +74,6 @@ export function resolveLaunch(launch: Launch, ctx: LaunchContext): SpawnSpec {
     "--models",
     modelCycleList(),
   ];
-  if (launch.notePath) args.push(`@${launch.notePath}`);
-
   return {
     command: PI_COMMAND,
     args,
@@ -150,31 +146,3 @@ export function parseAutostart(state: unknown): boolean {
   return (state as { autostart?: unknown }).autostart === true;
 }
 
-export function serializeLaunch(launch: Launch): Record<string, unknown> {
-  // The key is omitted rather than set to undefined, so the persisted state is
-  // plain JSON either way.
-  return launch.notePath ? { notePath: launch.notePath } : {};
-}
-
-/**
- * Total by design: a workspace layout saved by an older or broken version must
- * degrade to a plain Pi session rather than prevent the plugin from loading.
- */
-export function parseLaunch(state: unknown): Launch {
-  if (typeof state !== "object" || state === null || Array.isArray(state)) {
-    return {};
-  }
-
-  const { notePath } = state as { notePath?: unknown };
-  return typeof notePath === "string" && notePath.length > 0 ? { notePath } : {};
-}
-
-/** Short name for the pane holding this launch. */
-export function launchTitle(): string {
-  return "Pi";
-}
-
-/** The title, plus the note when there is one. Used in the waiting notice. */
-export function launchDescription(launch: Launch): string {
-  return launch.notePath ? `Pi for ${launch.notePath}` : "Pi";
-}

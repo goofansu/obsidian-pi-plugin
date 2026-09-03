@@ -1,5 +1,4 @@
 import { Notice, Plugin, PluginSettingTab, Setting, type WorkspaceLeaf } from "obsidian";
-import { serializeLaunch, type Launch } from "./launch.js";
 import {
   DEFAULT_SETTINGS,
   MODELS,
@@ -30,19 +29,16 @@ export default class WTermPiPlugin extends Plugin {
     this.addSettingTab(new WTermPiSettingTab(this));
 
     this.addCommand({
-      id: "open-terminal",
-      name: "Open terminal",
-      callback: () => void this.openLaunch({}),
+      id: "toggle-pi",
+      name: "Show or hide Pi",
+      callback: () => void this.togglePi(),
     });
 
     this.addCommand({
-      id: "open-pi-for-current-note",
-      name: "Open Pi for current note",
-      callback: () => {
-        // Read before opening: focusing the new pane changes the active file.
-        const notePath = this.app.workspace.getActiveFile()?.path;
-        void this.openLaunch({ notePath });
-      },
+      id: "focus-pi",
+      name: "Jump between your note and Pi",
+      hotkeys: [{ modifiers: ["Mod", "Shift"], key: "/" }],
+      callback: () => void this.jumpBetweenNoteAndPi(),
     });
   }
 
@@ -55,10 +51,51 @@ export default class WTermPiPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
-  private async openLaunch(launch: Launch): Promise<void> {
+  /** Opens Pi if it is closed, closes it if it is open. */
+  private async togglePi(): Promise<void> {
+    const existing = this.piLeaf();
+    if (existing) {
+      existing.detach();
+      return;
+    }
+    await this.openPi();
+  }
+
+  /**
+   * One key for both directions: bring Pi up and start typing to it, or, when
+   * it already has the keyboard, hand the keyboard back to the note.
+   */
+  private async jumpBetweenNoteAndPi(): Promise<void> {
+    const leaf = this.piLeaf();
+    if (!leaf) {
+      await this.openPi();
+      return;
+    }
+
+    const { view } = leaf;
+    if (view instanceof TerminalView && view.hasFocus()) {
+      this.focusNote();
+      return;
+    }
+
+    await this.app.workspace.revealLeaf(leaf);
+    if (view instanceof TerminalView) view.focusTerminal();
+  }
+
+  /** The note the user was last in, which is where the keyboard goes back to. */
+  private focusNote(): void {
+    const leaf = this.app.workspace.getMostRecentLeaf();
+    if (leaf) this.app.workspace.setActiveLeaf(leaf, { focus: true });
+  }
+
+  private piLeaf(): WorkspaceLeaf | null {
+    return this.app.workspace.getLeavesOfType(TERMINAL_VIEW_TYPE)[0] ?? null;
+  }
+
+  private async openPi(): Promise<void> {
     const leaf = this.rightSidebarLeaf();
     if (!leaf) {
-      new Notice("wterm Pi: could not open a terminal pane");
+      new Notice("wterm Pi: could not open a pane for Pi");
       return;
     }
 
@@ -67,7 +104,7 @@ export default class WTermPiPlugin extends Plugin {
     await leaf.setViewState({
       type: TERMINAL_VIEW_TYPE,
       active: true,
-      state: { ...serializeLaunch(launch), autostart: true },
+      state: { autostart: true },
     });
     await this.app.workspace.revealLeaf(leaf);
 
@@ -76,7 +113,7 @@ export default class WTermPiPlugin extends Plugin {
     if (view instanceof TerminalView) view.focusTerminal();
   }
 
-  /** A fresh sidebar leaf, so several sessions coexist as tabs. */
+  /** There is one Pi session, so a sidebar leaf is only ever created once. */
   private rightSidebarLeaf(): WorkspaceLeaf | null {
     return this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf("tab");
   }

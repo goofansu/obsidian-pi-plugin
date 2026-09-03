@@ -11,15 +11,10 @@ import type { Settings } from "./settings.js";
 import type { IPty } from "node-pty";
 import {
   agentDirPath,
-  launchDescription,
-  launchTitle,
   nodePtyPath,
   parseAutostart,
-  parseLaunch,
   resolveLaunch,
-  serializeLaunch,
   type Appearance,
-  type Launch,
 } from "./launch.js";
 
 export const TERMINAL_VIEW_TYPE = "wterm-pi-terminal";
@@ -27,7 +22,6 @@ export const TERMINAL_VIEW_TYPE = "wterm-pi-terminal";
 type Subscription = { dispose(): void };
 
 export class TerminalView extends ItemView {
-  private launch: Launch = {};
   private term: WTerm | null = null;
   private process: IPty | null = null;
   private subscriptions: Subscription[] = [];
@@ -51,7 +45,7 @@ export class TerminalView extends ItemView {
   }
 
   getDisplayText(): string {
-    return launchTitle();
+    return "Pi";
   }
 
   override getIcon(): string {
@@ -59,13 +53,14 @@ export class TerminalView extends ItemView {
   }
 
   override async setState(state: unknown, result: ViewStateResult): Promise<void> {
-    this.launch = parseLaunch(state);
     if (parseAutostart(state)) this.autostart = true;
     await super.setState(state, result);
   }
 
   override getState(): Record<string, unknown> {
-    return serializeLaunch(this.launch);
+    // Deliberately empty: autostart must never be persisted, and there is
+    // nothing else a restored pane needs to know.
+    return {};
   }
 
   override async onOpen(): Promise<void> {
@@ -109,6 +104,12 @@ export class TerminalView extends ItemView {
     this.term?.focus();
   }
 
+  /** Whether the keyboard is currently in this pane. */
+  hasFocus(): boolean {
+    const active = this.containerEl.ownerDocument.activeElement;
+    return active !== null && this.containerEl.contains(active);
+  }
+
   /** Called by the plugin on unload, so no process outlives the plugin. */
   dispose(): void {
     this.disposeSubscriptions();
@@ -148,9 +149,7 @@ export class TerminalView extends ItemView {
   }
 
   private writeIdleNotice(): void {
-    this.dim(
-      `[waiting] Click or press any key to start ${launchDescription(this.launch)}.`,
-    );
+    this.dim("[waiting] Click or press any key to start Pi.");
   }
 
   private dim(message: string): void {
@@ -193,7 +192,7 @@ export class TerminalView extends ItemView {
       return;
     }
 
-    const spec = resolveLaunch(this.launch, {
+    const spec = resolveLaunch({
       vaultRoot,
       agentDir,
       settings,
