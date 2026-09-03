@@ -34,6 +34,12 @@ plain text — Obsidian offers no secret storage. It reaches Pi as the
 `DEEPSEEK_API_KEY` environment variable, never as a command-line argument, so it
 does not appear in the process list. It is as safe as your vault, and no safer.
 
+## External editor
+
+Pi's Ctrl+G opens `vi`. Pi would otherwise fall back to `nano`, since Obsidian
+launched from the Finder passes no `EDITOR` or `VISUAL`. Change `EDITOR_COMMAND`
+in the launch module to use something else.
+
 ## Self-contained agent
 
 This plugin's Pi does not share anything with a Pi you have installed yourself:

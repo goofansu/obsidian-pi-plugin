@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  EDITOR_COMMAND,
   PI_COMMAND,
   agentDirPath,
   nodePtyPath,
@@ -154,6 +155,23 @@ describe("resolveLaunch — a self-contained agent", () => {
 
   it("disables startup network chatter", () => {
     expect(resolve().env.PI_OFFLINE).toBe("1");
+  });
+});
+
+describe("resolveLaunch — the external editor", () => {
+  it("gives pi vi for its Ctrl+G editor, by absolute path", () => {
+    const spec = resolve();
+
+    expect(spec.env.EDITOR).toBe(EDITOR_COMMAND);
+    expect(spec.env.VISUAL).toBe(EDITOR_COMMAND);
+    expect(EDITOR_COMMAND.startsWith("/")).toBe(true);
+  });
+
+  it("overrides an inherited editor, so the choice does not depend on the environment", () => {
+    const spec = resolve({ EDITOR: "nano", VISUAL: "emacs" });
+
+    expect(spec.env.EDITOR).toBe(EDITOR_COMMAND);
+    expect(spec.env.VISUAL).toBe(EDITOR_COMMAND);
   });
 });
 

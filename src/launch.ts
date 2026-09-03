@@ -9,6 +9,14 @@
 export const PI_COMMAND = "/Users/james/.npm-global/bin/pi";
 
 /**
+ * Pi's Ctrl+G opens `$VISUAL`, then `$EDITOR`, then falls back to `nano`.
+ * Obsidian launched from the Finder passes neither, so both are set here — by
+ * absolute path, like every other executable, and unconditionally rather than
+ * only when absent, so the editor is the same whatever the environment holds.
+ */
+export const EDITOR_COMMAND = "/usr/bin/vi";
+
+/**
  * Pi is a Node script started through a `#!/usr/bin/env node` line, so `node`
  * itself must be findable. Obsidian launched from the Finder inherits a bare
  * `PATH` containing neither the profile directory holding `node` nor the npm
@@ -108,6 +116,8 @@ function resolveEnv(
 
   env.TERM = "xterm-256color";
   env.COLORTERM = "truecolor";
+  env.EDITOR = EDITOR_COMMAND;
+  env.VISUAL = EDITOR_COMMAND;
 
   // PI_CODING_AGENT_DIR alone isolates settings, credentials, extensions,
   // skills, sessions, and trust. PI_PACKAGE_DIR is deliberately not set: it
