@@ -40,9 +40,10 @@ describe("resolveLaunch — command and arguments", () => {
     expect(spec.command.startsWith("/")).toBe(true);
   });
 
-  it("ignores project-local pi files on every launch", () => {
-    expect(resolve({}).args).toContain("--no-approve");
-    expect(resolve({ notePath: "a.md" }).args).toContain("--no-approve");
+  it("leaves project trust to pi, so a saved decision is honoured", () => {
+    // --no-approve would override a decision saved by /trust on the next launch.
+    expect(resolve({}).args).not.toContain("--no-approve");
+    expect(resolve({ notePath: "a.md" }).args).not.toContain("--no-approve");
   });
 
   it("loads no skills on every launch", () => {

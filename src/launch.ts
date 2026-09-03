@@ -20,13 +20,18 @@ export const PATH_PREPEND = [
 ];
 
 /**
- * `--no-approve` ignores project-local `.pi` settings, resources, and extensions
- * found in the vault. `--no-skills` disables skill loading outright, which the
- * private config directory alone cannot do: skills are also discovered from
- * `~/.agents/skills` and from `.agents/skills` in the working directory and its
- * parents, none of which move with `PI_CODING_AGENT_DIR`.
+ * `--no-skills` disables skill loading outright, which the private config
+ * directory alone cannot do: skills are also discovered from `~/.agents/skills`
+ * and from `.agents/skills` in the working directory and its parents, none of
+ * which move with `PI_CODING_AGENT_DIR`.
+ *
+ * `--no-approve` is deliberately not passed. It ignores project-local files for
+ * the run regardless of any saved decision, which made `/trust` appear broken:
+ * the decision was saved and then overridden on the next launch. Trust is left
+ * to pi, and the decision is written to the private config directory rather than
+ * the user's own.
  */
-export const PI_ARGS = ["--no-approve", "--no-skills"];
+export const PI_ARGS = ["--no-skills"];
 
 import {
   API_KEY_ENV,

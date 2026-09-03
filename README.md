@@ -39,7 +39,8 @@ This plugin's Pi does not share anything with a Pi you have installed yourself:
   separate;
 - every `PI_*` variable in the environment is dropped before it starts, along
   with any `DEEPSEEK_API_KEY`, so nothing ambient leaks in;
-- `--no-approve` makes it ignore project-local `.pi` files inside the vault;
+- `/trust` works normally and the decision is remembered — written to
+  `trust.json` in the private directory, never to your own;
 - `--no-skills` disables skill loading entirely, which the separate
   configuration directory cannot do on its own — skills are also discovered from
   `~/.agents/skills` and from `.agents/skills` above the working directory;
