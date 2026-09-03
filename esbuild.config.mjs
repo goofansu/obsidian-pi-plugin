@@ -1,37 +1,8 @@
-import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
 import builtins from "builtin-modules";
 import esbuild from "esbuild";
 
 const production = process.argv[2] === "production";
-
-/**
- * The directories the plugin puts at the front of pi's PATH, read from this
- * machine at build time rather than written into the source.
- *
- * `command -v node` rather than this process's own path: on Nix the running
- * binary lives in a store directory that a rebuild replaces, while the profile
- * directory it is reached through is stable.
- */
-function pathDirs() {
-  const read = (file, args) =>
-    execFileSync(file, args, { encoding: "utf8" }).trim();
-  const dirs = [];
-
-  try {
-    dirs.push(dirname(read("/bin/sh", ["-c", "command -v node"])));
-  } catch {
-    dirs.push(dirname(process.execPath));
-  }
-  try {
-    dirs.push(`${read("npm", ["prefix", "-g"])}/bin`);
-  } catch {
-    // Left out rather than guessed: pi then will not be found, which the pane
-    // reports plainly.
-  }
-  return dirs;
-}
 
 /** styles.css is the emulator's own stylesheet plus this plugin's sizing rules. */
 function buildStyles() {
@@ -57,7 +28,6 @@ const context = await esbuild.context({
   format: "cjs",
   platform: "node",
   target: "es2022",
-  define: { __PI_PATH_DIRS__: JSON.stringify(pathDirs()) },
   logLevel: "info",
   sourcemap: production ? false : "inline",
   treeShaking: true,

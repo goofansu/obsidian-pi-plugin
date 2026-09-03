@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   agentDirPath,
+  candidatePaths,
   EDITOR_COMMAND,
   LOCALE,
   nodePtyPath,
-  PATH_PREPEND,
   PI_COMMAND,
   resolveLaunch,
 } from "./launch.js";
@@ -35,13 +35,10 @@ const resolve = (
 
 describe("resolveLaunch — command and arguments", () => {
   it("runs pi, resolved through the PATH it is given", () => {
-    const spec = resolve();
+    const spec = resolve({ PATH: "/usr/bin" });
 
     expect(spec.command).toBe(PI_COMMAND);
-    // The directories holding it lead that PATH, ahead of anything inherited.
-    expect(spec.env.PATH.split(":").slice(0, PATH_PREPEND.length)).toEqual(
-      PATH_PREPEND,
-    );
+    expect(spec.env.PATH.split(":")).toContain("/usr/bin");
   });
 
   it("trusts the vault on every launch, so the trust prompt never appears", () => {
@@ -191,12 +188,12 @@ describe("directories set in settings", () => {
   const withDirs = (pathDirs: string) =>
     resolve({ PATH: "/usr/bin" }, { ...SETTINGS, pathDirs });
 
-  it("lead the PATH, ahead of the ones found at build time", () => {
+  it("lead the PATH, ahead of what the app already had", () => {
     const dirs = withDirs("/opt/mine/bin").env.PATH.split(":");
 
     expect(dirs[0]).toBe("/opt/mine/bin");
     expect(dirs.indexOf("/opt/mine/bin")).toBeLessThan(
-      dirs.indexOf(PATH_PREPEND[0]),
+      dirs.indexOf("/usr/bin"),
     );
   });
 
@@ -213,16 +210,9 @@ describe("directories set in settings", () => {
   });
 
   it("are not repeated if they name a directory already there", () => {
-    const dirs = withDirs(PATH_PREPEND[0]).env.PATH.split(":");
+    const dirs = withDirs("/usr/bin").env.PATH.split(":");
 
-    expect(dirs.filter((d) => d === PATH_PREPEND[0])).toHaveLength(1);
-  });
-});
-
-describe("the directories read from the machine", () => {
-  it("are absolute, and lead with somewhere node can be found", () => {
-    expect(PATH_PREPEND.length).toBeGreaterThan(0);
-    for (const dir of PATH_PREPEND) expect(dir.startsWith("/")).toBe(true);
+    expect(dirs.filter((d) => d === "/usr/bin")).toHaveLength(1);
   });
 });
 
@@ -258,13 +248,10 @@ describe("resolveLaunch — environment", () => {
     expect(spec.env.COLORTERM).toBe("truecolor");
   });
 
-  it("puts the interpreter directories on PATH ahead of the inherited one", () => {
-    const dirs = resolve({ PATH: "/usr/bin:/bin" }).env.PATH.split(":");
+  it("keeps the app's own PATH, in its original order", () => {
+    const dirs = resolve({ PATH: "/first:/second" }).env.PATH.split(":");
 
-    for (const dir of PATH_PREPEND) expect(dirs).toContain(dir);
-    expect(dirs.indexOf(PATH_PREPEND[0])).toBeLessThan(
-      dirs.indexOf("/usr/bin"),
-    );
+    expect(dirs.indexOf("/first")).toBeLessThan(dirs.indexOf("/second"));
   });
 
   it("guarantees the system directories, so a bare command always resolves", () => {
@@ -287,16 +274,16 @@ describe("resolveLaunch — environment", () => {
   it("still provides a PATH when none is inherited", () => {
     const spec = resolve();
 
-    for (const dir of PATH_PREPEND) expect(spec.env.PATH).toContain(dir);
+    expect(spec.env.PATH).toContain("/usr/bin");
     expect(spec.env.PATH.endsWith(":")).toBe(false);
   });
 
   it("does not repeat a directory already present on the inherited PATH", () => {
     const dirs = resolve({
-      PATH: `${PATH_PREPEND[0]}:/bin`,
+      PATH: "/usr/bin:/bin",
     }).env.PATH.split(":");
 
-    expect(dirs.filter((d) => d === PATH_PREPEND[0])).toHaveLength(1);
+    expect(dirs.filter((d) => d === "/usr/bin")).toHaveLength(1);
   });
 });
 
@@ -327,5 +314,30 @@ describe("locating plugin-relative paths", () => {
     expect(agentDirPath("/Users/james/Vault", undefined)).toBe(
       "/Users/james/Vault/.obsidian/plugins/obsidian-pi-plugin/pi-agent",
     );
+  });
+});
+
+describe("finding a command on a PATH", () => {
+  it("offers one candidate per directory, in search order", () => {
+    expect(candidatePaths("pi", "/first/bin:/second/bin")).toEqual([
+      "/first/bin/pi",
+      "/second/bin/pi",
+    ]);
+  });
+
+  it("ignores empty entries rather than producing a bare /pi", () => {
+    expect(candidatePaths("pi", "/first/bin::")).toEqual(["/first/bin/pi"]);
+  });
+
+  it("tolerates a trailing slash on a directory", () => {
+    expect(candidatePaths("pi", "/first/bin/")).toEqual(["/first/bin/pi"]);
+  });
+
+  it("takes a path with a slash in it as given, without searching", () => {
+    expect(candidatePaths("/opt/pi", "/first/bin")).toEqual(["/opt/pi"]);
+  });
+
+  it("finds nothing on an empty PATH", () => {
+    expect(candidatePaths("pi", "")).toEqual([]);
   });
 });

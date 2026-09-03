@@ -25,20 +25,6 @@ export const EDITOR_COMMAND = "vi";
 /** Any UTF-8 locale will do; this one is present on macOS. */
 export const LOCALE = "en_US.UTF-8";
 
-/** Injected at build time from this machine; see `pathDirs` in esbuild.config.mjs. */
-declare const __PI_PATH_DIRS__: string[];
-
-/**
- * Pi is a Node script started through a `#!/usr/bin/env node` line, so `node`
- * itself must be findable, and `pi` lives in npm's global directory. Obsidian
- * launched from the Finder inherits a bare `PATH` containing neither, so both
- * are prepended here.
- *
- * Read from the machine when the plugin is built rather than written down, so
- * moving node or changing npm's global prefix needs a rebuild and nothing else.
- */
-export const PATH_PREPEND: string[] = __PI_PATH_DIRS__;
-
 /**
  * Appended, not prepended, so they never shadow the user's own tools. They are
  * guaranteed rather than assumed because every command name here has to resolve
@@ -133,14 +119,14 @@ function resolveEnv(
   }
 
   const inherited = env.PATH ? env.PATH.split(":").filter(Boolean) : [];
-  // Directories set in settings lead, so a wrong value discovered at build time
-  // can be corrected without rebuilding.
-  const leading = [...parsePathDirs(settings.pathDirs), ...PATH_PREPEND];
-  const dirs = [
-    ...leading,
-    ...inherited.filter((dir) => !leading.includes(dir)),
-  ];
-  env.PATH = dedupe([...dirs, ...PATH_APPEND]).join(":");
+  // Whatever the app already has, with the user's own directories in front and
+  // the standard ones guaranteed at the back. Nothing about this machine is
+  // written down: if `pi` is not on the result, the pane says so.
+  env.PATH = dedupe([
+    ...parsePathDirs(settings.pathDirs),
+    ...inherited,
+    ...PATH_APPEND,
+  ]).join(":");
 
   env.TERM = "xterm-256color";
   env.COLORTERM = "truecolor";
@@ -184,4 +170,17 @@ export function agentDirPath(
   pluginDir: string | undefined,
 ): string {
   return `${vaultRoot}/${pluginDir ?? ".obsidian/plugins/obsidian-pi-plugin"}/pi-agent`;
+}
+
+/**
+ * Where a bare command could be found on this `PATH`, in search order. The
+ * caller checks which of them exists — this stays free of the filesystem so it
+ * can be tested as a rule rather than against a machine.
+ */
+export function candidatePaths(command: string, path: string): string[] {
+  if (command.includes("/")) return [command];
+  return path
+    .split(":")
+    .filter(Boolean)
+    .map((dir) => `${dir.replace(/\/$/, "")}/${command}`);
 }

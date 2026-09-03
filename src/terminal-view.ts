@@ -1,10 +1,11 @@
-import { mkdirSync } from "node:fs";
+import { accessSync, constants, mkdirSync } from "node:fs";
 import { WTerm } from "@wterm/dom";
 import type { IPty } from "node-pty";
 import { FileSystemAdapter, ItemView, type WorkspaceLeaf } from "obsidian";
 import {
   type Appearance,
   agentDirPath,
+  candidatePaths,
   nodePtyPath,
   resolveLaunch,
 } from "./launch.js";
@@ -300,6 +301,19 @@ export class TerminalView extends ItemView {
       processEnv: process.env,
     });
 
+    if (!isExecutable(spec.command, spec.env.PATH)) {
+      this.failToStart(
+        [
+          `Could not find ${spec.command} on this PATH.`,
+          "",
+          "  Add the directory holding it under",
+          "  Extra PATH directories in this plugin's settings,",
+          "  then press any key.",
+        ].join("\r\n"),
+      );
+      return;
+    }
+
     let proc: IPty;
     try {
       proc = spawn(spec.command, spec.args, {
@@ -353,6 +367,18 @@ function vaultRootOf(view: ItemView): string {
     throw new Error("Pi requires a filesystem-backed vault");
   }
   return adapter.getBasePath();
+}
+
+/** Whether a command can actually be run, given the PATH it will be run with. */
+function isExecutable(command: string, path: string): boolean {
+  return candidatePaths(command, path).some((candidate) => {
+    try {
+      accessSync(candidate, constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }
 
 function errorMessage(error: unknown): string {

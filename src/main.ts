@@ -5,7 +5,6 @@ import {
   Setting,
   type WorkspaceLeaf,
 } from "obsidian";
-import { PATH_PREPEND } from "./launch.js";
 import {
   DEFAULT_SETTINGS,
   MODELS,
@@ -185,7 +184,7 @@ class PiSettingTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Extra PATH directories")
       .setDesc(
-        `Optional. Searched before the ones found when the plugin was built (${PATH_PREPEND.join(", ")}). One per line, or separated by colons; absolute paths only. Takes effect on the next session.`,
+        "Where to look for pi and node, if Obsidian's own PATH does not already reach them. Searched first. One per line, or separated by colons; absolute paths only. Takes effect on the next session.",
       )
       .addTextArea((text) => {
         text.inputEl.rows = 3;
