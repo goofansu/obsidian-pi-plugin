@@ -17,6 +17,7 @@ const AGENT_DIR =
 const SETTINGS: Settings = {
   apiKey: "sk-test",
   model: "deepseek-v4-flash",
+  attachNoteContext: true,
   pathDirs: "",
 };
 
@@ -24,6 +25,7 @@ const resolve = (
   processEnv: NodeJS.ProcessEnv = {},
   settings: Settings = SETTINGS,
   appearance: "light" | "dark" = "dark",
+  noteContext: string | null = null,
 ) =>
   resolveLaunch({
     vaultRoot: VAULT,
@@ -31,6 +33,7 @@ const resolve = (
     settings,
     appearance,
     processEnv,
+    noteContext,
   });
 
 describe("resolveLaunch — command and arguments", () => {
@@ -71,14 +74,37 @@ describe("resolveLaunch — command and arguments", () => {
   );
 
   it("selects the configured model, and offers both for cycling", () => {
-    const args = resolve(
-      {},
-      { apiKey: "sk", model: "deepseek-v4-pro", pathDirs: "" },
-    ).args;
+    const args = resolve({}, { ...SETTINGS, model: "deepseek-v4-pro" }).args;
 
     expect(args[args.indexOf("--model") + 1]).toBe("deepseek/deepseek-v4-pro");
     expect(args[args.indexOf("--models") + 1]).toBe(
       "deepseek/deepseek-v4-flash,deepseek/deepseek-v4-pro",
+    );
+  });
+
+  it("hands the note the user was reading to pi as an added system prompt", () => {
+    const args = resolve({}, SETTINGS, "dark", "## The note in view").args;
+
+    expect(args[args.indexOf("--append-system-prompt") + 1]).toBe(
+      "## The note in view",
+    );
+  });
+
+  it("never submits the note as a message, which would spend a turn", () => {
+    // An initial message or an `@file` argument is sent the moment pi starts.
+    // The note is context, not a question, so it travels in the system prompt.
+    const spec = resolve({}, SETTINGS, "dark", "## The note in view");
+    const trailing = spec.args[spec.args.length - 1];
+
+    expect(trailing).toBe("## The note in view");
+    expect(spec.args[spec.args.length - 2]).toBe("--append-system-prompt");
+    expect(spec.args.some((arg) => arg.startsWith("@"))).toBe(false);
+  });
+
+  it("passes no such argument when there is no note to describe", () => {
+    expect(resolve().args).not.toContain("--append-system-prompt");
+    expect(resolve({}, SETTINGS, "dark", "").args).not.toContain(
+      "--append-system-prompt",
     );
   });
 
@@ -91,18 +117,12 @@ describe("resolveLaunch — command and arguments", () => {
 describe("resolveLaunch — the api key", () => {
   it("passes the configured key in the variable pi reads", () => {
     expect(
-      resolve(
-        {},
-        { apiKey: "sk-live", model: "deepseek-v4-flash", pathDirs: "" },
-      ).env[API_KEY_ENV],
+      resolve({}, { ...SETTINGS, apiKey: "sk-live" }).env[API_KEY_ENV],
     ).toBe("sk-live");
   });
 
   it("never puts the key on the command line", () => {
-    const spec = resolve(
-      {},
-      { apiKey: "sk-live", model: "deepseek-v4-flash", pathDirs: "" },
-    );
+    const spec = resolve({}, { ...SETTINGS, apiKey: "sk-live" });
 
     expect(spec.args.join(" ")).not.toContain("sk-live");
   });
@@ -122,7 +142,7 @@ describe("resolveLaunch — the api key", () => {
   it("prefers the configured key over an inherited one", () => {
     const spec = resolve(
       { [API_KEY_ENV]: "sk-ambient" },
-      { apiKey: "sk-configured", model: "deepseek-v4-flash", pathDirs: "" },
+      { ...SETTINGS, apiKey: "sk-configured" },
     );
 
     expect(spec.env[API_KEY_ENV]).toBe("sk-configured");

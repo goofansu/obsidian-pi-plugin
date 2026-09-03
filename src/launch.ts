@@ -72,6 +72,11 @@ export type LaunchContext = {
   settings: Settings;
   appearance: Appearance;
   processEnv: NodeJS.ProcessEnv;
+  /**
+   * What Pi should know about the note the user was reading, composed by
+   * `note-context.ts`, or null for none — no note in view, or the setting off.
+   */
+  noteContext: string | null;
 };
 
 export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
@@ -88,6 +93,13 @@ export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
     "--models",
     modelCycleList(),
   ];
+
+  // The note reaches Pi as an addition to its system prompt rather than as a
+  // message or an `@file` argument: both of those are submitted the moment Pi
+  // starts, which would spend a turn on a question the user has not asked yet.
+  // An appended system prompt starts no turn at all — Pi simply knows.
+  if (ctx.noteContext) args.push("--append-system-prompt", ctx.noteContext);
+
   return {
     command: PI_COMMAND,
     args,

@@ -30,9 +30,13 @@ Two commands, named for what they do rather than for what they run:
   you are in Pi. It opens Pi if it is not open yet, so one key covers every
   case.
 
-There is no per-note command. Pi runs in the vault and reads any note it needs
-with its own tools, so handing it one file at launch bought little and meant a
-second command to remember.
+There is no per-note command, because every session is already a per-note
+session: when Pi starts it is told which note the user was reading, where their
+cursor was in it, what its links resolve to, and which notes link back to it.
+Pi runs in the vault and reads any note it needs with its own tools, so the
+note's text is not sent — only the things about it that Pi could not work out
+for itself. A second command to remember bought nothing over doing this every
+time.
 There is no shell command. This pane exists to run Pi, and a second way to get
 a shell would only be a second thing to maintain.
 
@@ -88,6 +92,24 @@ Closing the pane kills the process.
 21. As a note author, I want Pi's external editor to be `vi`, so that Ctrl+G opens the editor I know rather than `nano`.
 22. As a note author, I want no startup banner, so that a small pane shows my conversation rather than a version number I already know.
 23. As a note author, I want to be able to turn the banner back on from inside Pi and have that stick, so that the plugin sets a default rather than enforcing a policy.
+
+### Starting on the note you are reading
+
+51. As a note author, I want a session to start already knowing which note I was reading, so that my first message can say "this note" and be understood.
+52. As a note author, I want that to happen every time a session starts, so that there is no command to remember and no step to forget.
+53. As a note author, I want the note captured when the session starts rather than when the pane was created, so that a pane that has sat in the sidebar all day opens on the note I am in now.
+54. As a note author, I want revealing and focusing Pi's pane not to change which note is captured, so that the act of starting Pi cannot lose the note it was started for.
+55. As a note author, I want the note's text left out, so that a long note is not copied into the model's context when Pi could read the file.
+56. As a note author, I want to be told where my cursor is and which headings it sits under, so that a question about "this section" has an answer.
+57. As a note author, I want each of the note's links reported with the file it resolves to, so that Pi can open `[[Some note]]` without searching the vault for it.
+58. As a note author, I want a link to a note that does not exist yet reported as unwritten, so that Pi does not go looking for a file that is not there.
+59. As a note author, I want the notes that link to this one listed, so that Pi knows the context around the note without reading the whole vault.
+60. As a note author, I want the note's properties, aliases, tags, and outline included, so that Pi knows what kind of note it is before it opens anything.
+61. As a note author, I want nothing submitted on my behalf, so that starting a session costs no answer I did not ask for.
+62. As a note author, I want the description marked as a snapshot rather than a live view, so that Pi checks rather than assuming I am still where I was.
+63. As a note author, I want every list in it bounded, so that an index note with a thousand backlinks cannot fill the session's context.
+64. As a note author, I want a session started with no note open to carry no note description at all, so that an empty workspace does not produce a note-shaped blank.
+65. As a vault owner, I want to be able to turn the whole thing off, so that a vault I would rather not describe to a provider stays undescribed until I ask.
 
 ### Using the terminal
 
@@ -158,10 +180,11 @@ Closing the pane kills the process.
 
 ### Shape
 
-One Obsidian plugin, desktop-only: three pure modules (a launch resolver, a
-settings model, and a device attribute responder), a terminal view, and an entry
-point registering two commands, the view type, and a settings tab. No session
-management, no transport layer, no UI framework.
+One Obsidian plugin, desktop-only: five pure modules (a launch resolver, a
+settings model, a paste builder, a device attribute responder, and the composer
+for the note in view), one thin reader of Obsidian's metadata cache, a terminal
+view, and an entry point registering two commands, the view type, and a settings
+tab. No session management, no transport layer, no UI framework.
 
 ### The launch resolver — the plugin's only real logic
 
@@ -189,6 +212,7 @@ resolveLaunch(ctx: {
   settings: Settings;
   appearance: "light" | "dark";
   processEnv: NodeJS.ProcessEnv;
+  noteContext: string | null;
 }): SpawnSpec;
 
 parseAutostart(state: unknown): boolean;
@@ -223,8 +247,11 @@ Rules the resolver encodes:
   assume dark and draw a dark interface on a light vault. The appearance is read
   when the process starts, so switching Obsidian's theme affects sessions started
   afterwards rather than running ones.
-- A note path becomes exactly one trailing argument, the path prefixed with `@`.
-  No note path means no such argument.
+- The note in view becomes one `--append-system-prompt` argument carrying the
+  composed description of it, and no argument at all when there is no note or
+  the setting is off. It is never a message and never an `@file` argument:
+  both of those are submitted the moment Pi starts, which would answer a
+  question the user had not asked yet.
 - Working directory is always the vault root.
 - The environment is the process environment with undefined values dropped, with
   the terminal type and colour terminal variables set for a 256-colour truecolor
@@ -284,8 +311,11 @@ model ids, the provider id, and the name of the environment variable the key
 travels in are taken from Pi's own bundled catalog rather than invented.
 
 The module holds the two models on offer, the default (flash), how a model is
-named on the command line, an optional list of extra `PATH` directories, and a
-total parser turning whatever Obsidian has stored into valid settings.
+named on the command line, an optional list of extra `PATH` directories, whether
+the note in view is attached to a starting session, and a total parser turning
+whatever Obsidian has stored into valid settings. Anything but a boolean stored
+for the attachment falls back to on, so a hand-edited data file cannot turn a
+default feature off by accident.
 
 The `PATH` directories are stored as the raw string the user typed, so the
 settings screen shows back exactly what was entered, and parsed separately into
@@ -447,6 +477,79 @@ Only one Pi session exists. The commands look for an existing pane before creati
 one, so a session is never duplicated and the conversation stays where the user
 left it.
 
+### The note in view
+
+Every session starts on a note, which is the reason to run the agent beside the
+notes rather than in a terminal. Two modules do it: a pure one that turns a
+plain snapshot of a note into the text Pi is started with, and a thin one that
+reads Obsidian's caches into that snapshot. Every rule about what Pi is told
+lives in the pure module, beside its tests; the reader decides nothing.
+
+What is sent is what Pi could not work out for itself:
+
+- the note's vault path, which is also its path from Pi's working directory,
+  and its length;
+- the cursor's line, the headings above it, and the lines of any selection;
+- the note's properties, aliases, and tags — frontmatter and body tags alike;
+- its heading outline;
+- each link as the note writes it together with the file it resolves to, and
+  each unresolved link named as not yet written;
+- the notes that link to it.
+
+What is not sent is the note's text. Pi runs in the vault and reads any file it
+wants, so a copy would only spend context — and the paths above are what make
+reading the rest possible: `[[Some note]]` names a file that only Obsidian's own
+resolution rules can find, and backlinks are not visible from the note's own
+text at all. Both come out of a cache Obsidian built when the vault opened, so a
+session start costs no file reads.
+
+The mechanism is `--append-system-prompt`, not a message and not an `@file`
+argument. Pi submits an initial message the moment it starts, so either of those
+would answer a question the user had not asked, spending a turn and money on it.
+An appended system prompt starts nothing: Pi simply knows. Measured against a
+real Pi rather than assumed — the model reports the note and the section back
+when asked, and nothing is sent until the user asks something.
+
+One interaction was measured rather than guessed: passing this flag stops Pi
+discovering an `APPEND_SYSTEM.md` of its own, in the vault's `.pi` directory or
+in the private configuration directory, because Pi looks for one only when no
+appended prompt was given on the command line. A vault-level `AGENTS.md` is
+unaffected — it travels by a different mechanism and was confirmed to arrive
+alongside this — so the document the developer writes for the vault still
+reaches Pi, which is what the spec relies on.
+
+The note is read when the process is spawned, not when the pane was built, so a
+pane that has sat in the sidebar since the vault opened starts on the note being
+read now. Obsidian reports the last file the user was in rather than whatever
+holds the keyboard, so revealing and focusing Pi's pane does not change the
+answer; the same property is what lets the selection command work from inside
+Pi. The cursor and selection come from the last active editor, and are used only
+when that editor is the note in question — a stale editor for another note would
+otherwise put a cursor position on the wrong note.
+
+Every list is bounded and every cut announced, because a vault can hold an index
+note with a thousand backlinks and a truncated outline read as a complete one
+would be worse than no outline. Frontmatter is whatever YAML the user wrote, so
+each value is folded onto one line and shortened, and a nested value is rendered
+as JSON rather than as `[object Object]`. Tags, aliases, and Obsidian's own
+`position` key are left out of the properties, since they are reported on their
+own lines or are not the user's to begin with. A note with nothing in a category
+gets no line for it.
+
+The description says of itself that it is a snapshot from the moment the session
+started. It is: Pi keeps the session, the user moves around the vault, and a
+description that presented itself as current would be quietly wrong within
+minutes. Keeping it up to date was considered and rejected — see Out of Scope.
+
+It carries no instructions about the vault, only facts about the note. How to
+write notes, what to preserve, what not to touch: that is the vault-level
+`AGENTS.md`, which is the developer's document and not this plugin's business.
+
+One setting turns it off, defaulting to on. The default is the point of the
+plugin; the switch exists because everything here reaches the provider with the
+session's first request, and a note's title and properties are sometimes the
+private part.
+
 ### Sending a selection
 
 Modelled on the editor convention of quoting a selection into an assistant panel.
@@ -606,6 +709,37 @@ interior blank lines preserved, escape sequences passed through as literal text,
 an empty or whitespace-only selection declined, and text that only looks empty
 at the edges kept.
 
+### The note composer
+
+A fifth pure unit, built from plain snapshots, with no Obsidian and no doubles,
+and the second largest body of tests after the resolver. Coverage includes: nothing at
+all composed when no note is in view; the vault-relative path and the vault's
+name; the note's text absent by construction; the description stating that it is
+a snapshot; the length reported only when an editor supplies one; the cursor line
+with the trail of headings above it, the line alone above the first heading, and
+nothing at all when the note is only being read; a selection reported as its
+lines, and a one-line selection as one line; the heading trail nesting by the
+levels as written rather than one step at a time, treating a heading's own line
+as inside it, and replacing a heading with its sibling; the outline indented by
+level; a wikilink reported with the file it resolves to, an unresolved one named
+as unwritten, a repeated link mentioned once, and two links to one file kept
+apart when their text differs; embeds listed separately; backlinks derived from
+Obsidian's resolved-link map, excluding the note itself and ordered so one vault
+reads the same way twice; tags and aliases on their own lines; properties one per
+line, with lists joined, nested values rendered as JSON, multi-line values folded
+onto one line, long values shortened, empty values dropped, and tags, aliases,
+and Obsidian's `position` key left out; every list cut off at its limit with the
+cut announced; and the whole description bounded — under two thousand characters
+for an ordinary note and under eight thousand for a deliberately overgrown one.
+
+The resolver's tests carry how it reaches Pi: the composed text as the value of
+one `--append-system-prompt` argument, no such argument when there is nothing to
+say, and no `@file` argument or trailing message ever, since either would be
+submitted at startup.
+
+The reader that fills the snapshot from Obsidian's caches is checked by hand,
+along with the rest of the code that needs a running Obsidian.
+
 ### The terminal query filter
 
 A pure unit, no imports and no doubles. Coverage includes each device attribute
@@ -627,7 +761,9 @@ collapsed and confirm it expands with the pane focused; exercise plain output,
 `vim`, and a sidebar drag-resize; open Pi for a note and confirm both that the
 note is in its opening context and that the sidebar taking focus did not change
 which note was captured; confirm the shell pane and the Pi pane coexist as sidebar
-tabs; ask Pi to read a second vault note; drag a live pane into the main editor
+tabs; ask a fresh session which note is in view and confirm it answers with the
+note that was open, its section, and its backlinks; ask Pi to read a second
+vault note; drag a live pane into the main editor
 area and confirm the session continues; close a pane mid-response and confirm no
 orphaned process survives; restart Obsidian and confirm the restored panes are
 idle rather than running, then confirm activating one starts it; confirm the
@@ -650,6 +786,14 @@ tests establish the pattern for anything added later.
 - **Session tabs, history, restoration, and transcript persistence.** Pi already
   manages its own sessions, and storing transcripts would duplicate sensitive
   conversation data.
+- **Keeping the note description up to date during a session.** It is captured
+  once, when Pi starts. Following the user around the vault would mean either
+  writing into the running session, which puts text Pi's editor did not ask for
+  in front of the user, or rewriting a file inside the private configuration
+  directory, which Pi reads only at startup. Both were weighed and neither is
+  worth it: the description says it is a snapshot, and restarting a session is
+  one keystroke. This is the known limit of the feature rather than an
+  oversight.
 - **A WebSocket or any other transport.** The terminal and the process live in one
   Electron process.
 - **A UI framework wrapper.** Obsidian supplies the view lifecycle.

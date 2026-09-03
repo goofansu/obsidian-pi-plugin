@@ -207,6 +207,20 @@ class PiSettingTab extends PluginSettingTab {
       });
 
     new Setting(this.containerEl)
+      .setName("Attach the note you are reading")
+      .setDesc(
+        "When a session starts, tell Pi which note is in view: its path, its properties, its outline, where your cursor is, what its links resolve to, and which notes link to it. The note's text is not sent — Pi reads the file itself. Applies to sessions started from now on.",
+      )
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.settings.attachNoteContext)
+          .onChange(async (value) => {
+            this.plugin.settings.attachNoteContext = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(this.containerEl)
       .setName("Model")
       .setDesc(
         "Applies to sessions started from now on. Both models can be cycled inside a session.",

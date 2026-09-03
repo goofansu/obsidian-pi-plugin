@@ -30,6 +30,26 @@ describe("the two models on offer", () => {
   });
 });
 
+describe("attaching the note in view", () => {
+  it("is on by default, since it is the point of running pi here", () => {
+    expect(DEFAULT_SETTINGS.attachNoteContext).toBe(true);
+  });
+
+  it("can be turned off and stays off", () => {
+    expect(parseSettings({ attachNoteContext: false }).attachNoteContext).toBe(
+      false,
+    );
+  });
+
+  it("falls back to on for anything that is not a boolean", () => {
+    for (const stored of ["no", 0, null, undefined, {}]) {
+      expect(
+        parseSettings({ attachNoteContext: stored }).attachNoteContext,
+      ).toBe(true);
+    }
+  });
+});
+
 describe("model patterns passed to pi", () => {
   it("qualifies a model with its provider", () => {
     expect(modelPattern("deepseek-v4-pro")).toBe("deepseek/deepseek-v4-pro");
@@ -59,6 +79,7 @@ describe("parseSettings is total", () => {
     ).toEqual({
       apiKey: "sk-abc",
       model: "deepseek-v4-pro",
+      attachNoteContext: true,
       pathDirs: "",
     });
   });

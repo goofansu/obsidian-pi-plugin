@@ -2,6 +2,7 @@ import { accessSync, constants, mkdirSync } from "node:fs";
 import { WTerm } from "@wterm/dom";
 import type { IPty } from "node-pty";
 import { FileSystemAdapter, ItemView, type WorkspaceLeaf } from "obsidian";
+import { readActiveNote } from "./active-note.js";
 import {
   type Appearance,
   agentDirPath,
@@ -9,6 +10,7 @@ import {
   nodePtyPath,
   resolveLaunch,
 } from "./launch.js";
+import { composeNoteContext } from "./note-context.js";
 import { bracketedPaste } from "./paste.js";
 import type { Settings } from "./settings.js";
 import { TerminalQueryFilter } from "./terminal-queries.js";
@@ -324,6 +326,26 @@ export class TerminalView extends ItemView {
     this.term?.write(`\r\n\x1b[31m[error] ${message}\x1b[0m\r\n`);
   }
 
+  /**
+   * What Pi is told about the note in view, read here rather than when the pane
+   * was built: a pane that has waited in the sidebar all day starts on the note
+   * being read now. Obsidian still reports the user's note while the keyboard
+   * is in this pane, so revealing the pane to start Pi does not change it.
+   *
+   * A failure gives up the note rather than the session. There is nothing the
+   * user could fix in response, and starting Pi without the note is far better
+   * than not starting Pi.
+   */
+  private noteContext(settings: Settings): string | null {
+    if (!settings.attachNoteContext) return null;
+
+    try {
+      return composeNoteContext(readActiveNote(this.app));
+    } catch {
+      return null;
+    }
+  }
+
   private start(): void {
     const term = this.term;
     if (this.started || !term) return;
@@ -365,6 +387,7 @@ export class TerminalView extends ItemView {
       settings,
       appearance: obsidianAppearance(this.containerEl),
       processEnv: process.env,
+      noteContext: this.noteContext(settings),
     });
 
     if (!isExecutable(spec.command, spec.env.PATH)) {
