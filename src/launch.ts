@@ -5,16 +5,22 @@
  * intent to and from the plain state Obsidian persists on a workspace leaf.
  */
 
-/** Absolute so the launch does not depend on Obsidian's GUI `PATH`. */
-export const PI_COMMAND = "/Users/james/.npm-global/bin/pi";
+/**
+ * Resolved through the `PATH` built below rather than hard-coded. node-pty
+ * resolves a bare command against the environment it is given, not the one
+ * Obsidian happens to hold, so prepending the directory that contains `pi` is
+ * enough to make this deterministic — and it keeps working if pi is reinstalled
+ * somewhere else on that path.
+ */
+export const PI_COMMAND = "pi";
 
 /**
  * Pi's Ctrl+G opens `$VISUAL`, then `$EDITOR`, then falls back to `nano`.
- * Obsidian launched from the Finder passes neither, so both are set here — by
- * absolute path, like every other executable, and unconditionally rather than
- * only when absent, so the editor is the same whatever the environment holds.
+ * Obsidian launched from the Finder passes neither, so both are set here,
+ * unconditionally rather than only when absent, so the editor is the same
+ * whatever the environment holds.
  */
-export const EDITOR_COMMAND = "/usr/bin/vi";
+export const EDITOR_COMMAND = "vi";
 
 /** Any UTF-8 locale will do; this one is present on macOS. */
 export const LOCALE = "en_US.UTF-8";
@@ -29,6 +35,13 @@ export const PATH_PREPEND = [
   "/etc/profiles/per-user/james/bin",
   "/Users/james/.npm-global/bin",
 ];
+
+/**
+ * Appended, not prepended, so they never shadow the user's own tools. They are
+ * guaranteed rather than assumed because every command name here has to resolve
+ * against this `PATH` alone.
+ */
+export const PATH_APPEND = ["/usr/bin", "/bin"];
 
 /**
  * `--approve` trusts project-local files for the run, so the vault is trusted
@@ -112,9 +125,13 @@ function resolveEnv(
   }
 
   const inherited = env.PATH ? env.PATH.split(":").filter(Boolean) : [];
-  env.PATH = [
+  const dirs = [
     ...PATH_PREPEND,
     ...inherited.filter((dir) => !PATH_PREPEND.includes(dir)),
+  ];
+  env.PATH = [
+    ...dirs,
+    ...PATH_APPEND.filter((dir) => !dirs.includes(dir)),
   ].join(":");
 
   env.TERM = "xterm-256color";

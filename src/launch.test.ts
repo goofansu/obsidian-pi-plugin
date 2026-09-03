@@ -29,11 +29,12 @@ const resolve = (
   });
 
 describe("resolveLaunch — command and arguments", () => {
-  it("runs pi by absolute path", () => {
+  it("runs pi, resolved through the PATH it is given", () => {
     const spec = resolve();
 
     expect(spec.command).toBe(PI_COMMAND);
-    expect(spec.command.startsWith("/")).toBe(true);
+    // The directory holding it is on that PATH, ahead of anything inherited.
+    expect(spec.env.PATH.split(":")[1]).toBe("/Users/james/.npm-global/bin");
   });
 
   it("trusts the vault on every launch, so the trust prompt never appears", () => {
@@ -160,12 +161,11 @@ describe("resolveLaunch — a self-contained agent", () => {
 });
 
 describe("resolveLaunch — the external editor", () => {
-  it("gives pi vi for its Ctrl+G editor, by absolute path", () => {
+  it("gives pi vi for its Ctrl+G editor", () => {
     const spec = resolve();
 
     expect(spec.env.EDITOR).toBe(EDITOR_COMMAND);
     expect(spec.env.VISUAL).toBe(EDITOR_COMMAND);
-    expect(EDITOR_COMMAND.startsWith("/")).toBe(true);
   });
 
   it("overrides an inherited editor, so the choice does not depend on the environment", () => {
@@ -215,6 +215,23 @@ describe("resolveLaunch — environment", () => {
     expect(dirs.indexOf("/etc/profiles/per-user/james/bin")).toBeLessThan(
       dirs.indexOf("/usr/bin"),
     );
+  });
+
+  it("guarantees the system directories, so a bare command always resolves", () => {
+    const dirs = resolve({ PATH: "/opt/homebrew/bin" }).env.PATH.split(":");
+
+    expect(dirs).toContain("/usr/bin");
+    expect(dirs).toContain("/bin");
+    // Appended, so they never shadow the user's own tools.
+    expect(dirs.indexOf("/opt/homebrew/bin")).toBeLessThan(
+      dirs.indexOf("/usr/bin"),
+    );
+  });
+
+  it("does not repeat a system directory the environment already had", () => {
+    const dirs = resolve({ PATH: "/usr/bin:/bin" }).env.PATH.split(":");
+
+    expect(dirs.filter((d) => d === "/usr/bin")).toHaveLength(1);
   });
 
   it("still provides a PATH when none is inherited", () => {

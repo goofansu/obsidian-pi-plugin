@@ -40,8 +40,8 @@ does not appear in the process list. It is as safe as your vault, and no safer.
 ## External editor
 
 Pi's Ctrl+G opens `vi`. Pi would otherwise fall back to `nano`, since Obsidian
-launched from the Finder passes no `EDITOR` or `VISUAL`. Change `EDITOR_COMMAND`
-in the launch module to use something else.
+launched from the Finder passes no `EDITOR` or `VISUAL`. Change `EDITOR_COMMAND` in the launch
+module to use something else.
 
 ## Self-contained agent
 
