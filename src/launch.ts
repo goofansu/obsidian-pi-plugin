@@ -21,6 +21,27 @@ export const PATH_PREPEND = [
   "/Users/james/.npm-global/bin",
 ];
 
+/**
+ * Obsidian evaluates a plugin's bundle without a module path, so a bare
+ * `require("node-pty")` resolves against Electron's internals rather than the
+ * installed plugin folder. The addon is therefore required by absolute path,
+ * built from the vault root and the plugin's own folder.
+ */
+export function nodePtyPath(vaultRoot: string, pluginDir: string | undefined): string {
+  if (!pluginDir) return "node-pty";
+  return `${vaultRoot}/${pluginDir}/node_modules/node-pty`;
+}
+
+/**
+ * Whether the pane was opened by a command (start now) rather than rebuilt from
+ * the saved workspace layout (wait). It travels in the leaf's view state but is
+ * deliberately absent from `serializeLaunch`, so it is never persisted.
+ */
+export function parseAutostart(state: unknown): boolean {
+  if (typeof state !== "object" || state === null) return false;
+  return (state as { autostart?: unknown }).autostart === true;
+}
+
 export type Launch =
   | { kind: "shell" }
   | { kind: "pi"; notePath?: string };

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   PI_COMMAND,
+  parseAutostart,
+  nodePtyPath,
   SHELL_COMMAND,
   launchDescription,
   launchTitle,
@@ -172,6 +174,41 @@ describe("naming a launch", () => {
   it("names the note in a pi launch's description", () => {
     expect(launchDescription({ kind: "pi", notePath: "notes/a.md" })).toBe(
       "Pi for notes/a.md",
+    );
+  });
+});
+
+describe("locating node-pty inside the installed plugin folder", () => {
+  it("builds an absolute path from the vault root and the plugin folder", () => {
+    expect(nodePtyPath("/Users/james/Vault", ".obsidian/plugins/wterm-pi")).toBe(
+      "/Users/james/Vault/.obsidian/plugins/wterm-pi/node_modules/node-pty",
+    );
+  });
+
+  it("falls back to the bare module name when the plugin folder is unknown", () => {
+    expect(nodePtyPath("/Users/james/Vault", undefined)).toBe("node-pty");
+    expect(nodePtyPath("/Users/james/Vault", "")).toBe("node-pty");
+  });
+});
+
+describe("parseAutostart", () => {
+  it("is true only when the opening command asked for it", () => {
+    expect(parseAutostart({ kind: "shell", autostart: true })).toBe(true);
+  });
+
+  it.each([
+    ["a restored pane", { kind: "shell" }],
+    ["a falsy flag", { kind: "shell", autostart: false }],
+    ["a non-boolean flag", { kind: "shell", autostart: "yes" }],
+    ["undefined", undefined],
+    ["null", null],
+  ])("is false for %s", (_label, state) => {
+    expect(parseAutostart(state)).toBe(false);
+  });
+
+  it("is never persisted, because serializeLaunch does not emit it", () => {
+    expect(serializeLaunch({ kind: "pi", notePath: "a.md" })).not.toHaveProperty(
+      "autostart",
     );
   });
 });

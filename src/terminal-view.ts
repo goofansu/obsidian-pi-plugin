@@ -9,6 +9,8 @@ import type { IPty } from "node-pty";
 import {
   launchDescription,
   launchTitle,
+  nodePtyPath,
+  parseAutostart,
   parseLaunch,
   resolveLaunch,
   serializeLaunch,
@@ -16,14 +18,6 @@ import {
 } from "./launch.js";
 
 export const TERMINAL_VIEW_TYPE = "wterm-pi-terminal";
-
-/**
- * Set by the commands when they open a leaf, so a pane the user just asked for
- * starts at once while a pane Obsidian rebuilt from the saved workspace layout
- * waits. Ephemeral state is never persisted, which is exactly the property
- * this flag needs.
- */
-export type TerminalEphemeralState = { autostart?: boolean };
 
 type Subscription = { dispose(): void };
 
@@ -35,7 +29,12 @@ export class TerminalView extends ItemView {
   private started = false;
   private autostart = false;
 
-  constructor(leaf: WorkspaceLeaf, private readonly onDispose: (view: TerminalView) => void) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    /** The plugin's folder inside the vault, used to locate the PTY addon. */
+    private readonly pluginDir: string | undefined,
+    private readonly onDispose: (view: TerminalView) => void,
+  ) {
     super(leaf);
   }
 
@@ -53,18 +52,12 @@ export class TerminalView extends ItemView {
 
   override async setState(state: unknown, result: ViewStateResult): Promise<void> {
     this.launch = parseLaunch(state);
+    if (parseAutostart(state)) this.autostart = true;
     await super.setState(state, result);
   }
 
   override getState(): Record<string, unknown> {
     return serializeLaunch(this.launch);
-  }
-
-  override setEphemeralState(state: unknown): void {
-    const { autostart } = (state ?? {}) as TerminalEphemeralState;
-    if (!autostart) return;
-    this.autostart = true;
-    if (this.term) this.start();
   }
 
   override async onOpen(): Promise<void> {
@@ -155,18 +148,18 @@ export class TerminalView extends ItemView {
 
     // Required lazily so a native addon that fails to load reports itself in
     // the pane instead of preventing the whole plugin from loading.
+    let vaultRoot: string;
     let spawn: typeof import("node-pty").spawn;
     try {
-      ({ spawn } = require("node-pty") as typeof import("node-pty"));
+      vaultRoot = vaultRootOf(this);
+      const modulePath = nodePtyPath(vaultRoot, this.pluginDir);
+      ({ spawn } = require(modulePath) as typeof import("node-pty"));
     } catch (error) {
       this.failToStart(`Could not load node-pty: ${errorMessage(error)}`);
       return;
     }
 
-    const spec = resolveLaunch(this.launch, {
-      vaultRoot: vaultRootOf(this),
-      processEnv: process.env,
-    });
+    const spec = resolveLaunch(this.launch, { vaultRoot, processEnv: process.env });
 
     let proc: IPty;
     try {

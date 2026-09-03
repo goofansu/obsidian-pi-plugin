@@ -1,17 +1,15 @@
 import { Notice, Plugin, type WorkspaceLeaf } from "obsidian";
 import { serializeLaunch, type Launch } from "./launch.js";
-import {
-  TERMINAL_VIEW_TYPE,
-  TerminalView,
-  type TerminalEphemeralState,
-} from "./terminal-view.js";
+import { TERMINAL_VIEW_TYPE, TerminalView } from "./terminal-view.js";
 
 export default class WTermPiPlugin extends Plugin {
   private views = new Set<TerminalView>();
 
   override async onload(): Promise<void> {
     this.registerView(TERMINAL_VIEW_TYPE, (leaf) => {
-      const view = new TerminalView(leaf, (v) => this.views.delete(v));
+      const view = new TerminalView(leaf, this.manifest.dir, (v) =>
+        this.views.delete(v),
+      );
       this.views.add(view);
       return view;
     });
@@ -45,11 +43,13 @@ export default class WTermPiPlugin extends Plugin {
       return;
     }
 
-    const ephemeral: TerminalEphemeralState = { autostart: true };
-    await leaf.setViewState(
-      { type: TERMINAL_VIEW_TYPE, active: true, state: serializeLaunch(launch) },
-      ephemeral,
-    );
+    // autostart rides in the view state because Obsidian delivers that
+    // reliably; getState() omits it, so it is never persisted.
+    await leaf.setViewState({
+      type: TERMINAL_VIEW_TYPE,
+      active: true,
+      state: { ...serializeLaunch(launch), autostart: true },
+    });
     await this.app.workspace.revealLeaf(leaf);
   }
 
