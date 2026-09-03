@@ -34,6 +34,12 @@ plain text — Obsidian offers no secret storage. It reaches Pi as the
 `DEEPSEEK_API_KEY` environment variable, never as a command-line argument, so it
 does not appear in the process list. It is as safe as your vault, and no safer.
 
+## Startup banner
+
+Pi's startup header is turned off, by seeding `quietStartup` into Pi's settings
+file inside the private directory. It is written once: turn it back on from
+`/settings` inside Pi and that sticks.
+
 ## External editor
 
 Pi's Ctrl+G opens `vi`. Pi would otherwise fall back to `nano`, since Obsidian

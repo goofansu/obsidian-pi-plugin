@@ -1,4 +1,14 @@
-import { Notice, Plugin, PluginSettingTab, Setting, type WorkspaceLeaf } from "obsidian";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  FileSystemAdapter,
+  Notice,
+  Plugin,
+  PluginSettingTab,
+  Setting,
+  type WorkspaceLeaf,
+} from "obsidian";
+import { agentDirPath } from "./launch.js";
+import { piSettingsPath, seedPiSettings } from "./pi-settings.js";
 import {
   DEFAULT_SETTINGS,
   MODELS,
@@ -14,6 +24,7 @@ export default class WTermPiPlugin extends Plugin {
 
   override async onload(): Promise<void> {
     this.settings = parseSettings(await this.loadData());
+    this.seedAgentSettings();
 
     this.registerView(TERMINAL_VIEW_TYPE, (leaf) => {
       const view = new TerminalView(
@@ -52,6 +63,34 @@ export default class WTermPiPlugin extends Plugin {
   override onunload(): void {
     for (const view of [...this.views]) view.dispose();
     this.views.clear();
+  }
+
+  /**
+   * Writes pi's own settings file once, to turn its startup banner off. Any
+   * value already there is left alone, so choices made inside pi survive.
+   */
+  private seedAgentSettings(): void {
+    const adapter = this.app.vault.adapter;
+    if (!(adapter instanceof FileSystemAdapter)) return;
+
+    const agentDir = agentDirPath(adapter.getBasePath(), this.manifest.dir);
+    const path = piSettingsPath(agentDir);
+    try {
+      let stored: unknown;
+      try {
+        stored = JSON.parse(readFileSync(path, "utf8"));
+      } catch {
+        stored = undefined;
+      }
+
+      const { settings, changed } = seedPiSettings(stored);
+      if (!changed) return;
+
+      mkdirSync(agentDir, { recursive: true });
+      writeFileSync(path, `${JSON.stringify(settings, null, 2)}\n`);
+    } catch {
+      // A banner is not worth failing to load over.
+    }
   }
 
   async saveSettings(): Promise<void> {
