@@ -1,23 +1,38 @@
-import { Notice, Plugin, type WorkspaceLeaf } from "obsidian";
+import { Notice, Plugin, PluginSettingTab, Setting, type WorkspaceLeaf } from "obsidian";
 import { serializeLaunch, type Launch } from "./launch.js";
+import {
+  DEFAULT_SETTINGS,
+  MODELS,
+  parseSettings,
+  type ModelId,
+  type Settings,
+} from "./settings.js";
 import { TERMINAL_VIEW_TYPE, TerminalView } from "./terminal-view.js";
 
 export default class WTermPiPlugin extends Plugin {
   private views = new Set<TerminalView>();
+  override settings: Settings = { ...DEFAULT_SETTINGS };
 
   override async onload(): Promise<void> {
+    this.settings = parseSettings(await this.loadData());
+
     this.registerView(TERMINAL_VIEW_TYPE, (leaf) => {
-      const view = new TerminalView(leaf, this.manifest.dir, (v) =>
-        this.views.delete(v),
+      const view = new TerminalView(
+        leaf,
+        this.manifest.dir,
+        () => this.settings,
+        (v) => this.views.delete(v),
       );
       this.views.add(view);
       return view;
     });
 
+    this.addSettingTab(new WTermPiSettingTab(this));
+
     this.addCommand({
       id: "open-terminal",
       name: "Open terminal",
-      callback: () => void this.openLaunch({ kind: "pi" }),
+      callback: () => void this.openLaunch({}),
     });
 
     this.addCommand({
@@ -26,20 +41,18 @@ export default class WTermPiPlugin extends Plugin {
       callback: () => {
         // Read before opening: focusing the new pane changes the active file.
         const notePath = this.app.workspace.getActiveFile()?.path;
-        void this.openLaunch({ kind: "pi", notePath });
+        void this.openLaunch({ notePath });
       },
-    });
-
-    this.addCommand({
-      id: "open-shell",
-      name: "Open shell",
-      callback: () => void this.openLaunch({ kind: "shell" }),
     });
   }
 
   override onunload(): void {
     for (const view of [...this.views]) view.dispose();
     this.views.clear();
+  }
+
+  async saveSettings(): Promise<void> {
+    await this.saveData(this.settings);
   }
 
   private async openLaunch(launch: Launch): Promise<void> {
@@ -63,8 +76,48 @@ export default class WTermPiPlugin extends Plugin {
     if (view instanceof TerminalView) view.focusTerminal();
   }
 
-  /** A fresh sidebar leaf, so a shell pane and a Pi pane coexist as tabs. */
+  /** A fresh sidebar leaf, so several sessions coexist as tabs. */
   private rightSidebarLeaf(): WorkspaceLeaf | null {
     return this.app.workspace.getRightLeaf(true) ?? this.app.workspace.getLeaf("tab");
+  }
+}
+
+class WTermPiSettingTab extends PluginSettingTab {
+  constructor(private readonly plugin: WTermPiPlugin) {
+    super(plugin.app, plugin);
+  }
+
+  override display(): void {
+    this.containerEl.empty();
+
+    new Setting(this.containerEl)
+      .setName("DeepSeek API key")
+      .setDesc(
+        "Required. Stored in this plugin's data file inside the vault, and passed to Pi as an environment variable rather than on the command line.",
+      )
+      .addText((text) => {
+        text.inputEl.type = "password";
+        text.inputEl.autocomplete = "off";
+        text
+          .setPlaceholder("sk-…")
+          .setValue(this.plugin.settings.apiKey)
+          .onChange(async (value) => {
+            this.plugin.settings.apiKey = value.trim();
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(this.containerEl)
+      .setName("Model")
+      .setDesc("Applies to sessions started from now on. Both models can be cycled inside a session.")
+      .addDropdown((dropdown) => {
+        for (const model of MODELS) dropdown.addOption(model.id, model.name);
+        dropdown
+          .setValue(this.plugin.settings.model)
+          .onChange(async (value) => {
+            this.plugin.settings.model = value as ModelId;
+            await this.plugin.saveSettings();
+          });
+      });
   }
 }

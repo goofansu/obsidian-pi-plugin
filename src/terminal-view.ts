@@ -5,9 +5,12 @@ import {
   type WorkspaceLeaf,
 } from "obsidian";
 import { WTerm } from "@wterm/dom";
+import { mkdirSync } from "node:fs";
 import { DeviceAttributeResponder } from "./device-attributes.js";
+import type { Settings } from "./settings.js";
 import type { IPty } from "node-pty";
 import {
+  agentDirPath,
   launchDescription,
   launchTitle,
   nodePtyPath,
@@ -23,7 +26,7 @@ export const TERMINAL_VIEW_TYPE = "wterm-pi-terminal";
 type Subscription = { dispose(): void };
 
 export class TerminalView extends ItemView {
-  private launch: Launch = { kind: "shell" };
+  private launch: Launch = {};
   private term: WTerm | null = null;
   private process: IPty | null = null;
   private subscriptions: Subscription[] = [];
@@ -35,6 +38,8 @@ export class TerminalView extends ItemView {
     leaf: WorkspaceLeaf,
     /** The plugin's folder inside the vault, used to locate the PTY addon. */
     private readonly pluginDir: string | undefined,
+    /** Read at spawn time, so a key added in settings applies to the next start. */
+    private readonly readSettings: () => Settings,
     private readonly onDispose: (view: TerminalView) => void,
   ) {
     super(leaf);
@@ -45,7 +50,7 @@ export class TerminalView extends ItemView {
   }
 
   getDisplayText(): string {
-    return launchTitle(this.launch);
+    return launchTitle();
   }
 
   override getIcon(): string {
@@ -160,22 +165,39 @@ export class TerminalView extends ItemView {
   private start(): void {
     const term = this.term;
     if (this.started || !term) return;
+
+    const settings = this.readSettings();
+    if (!settings.apiKey) {
+      this.dim(
+        "[not configured] Add your DeepSeek API key in Settings \u2192 Community plugins \u2192 wterm Pi, then press any key.",
+      );
+      return;
+    }
+
     this.started = true;
 
     // Required lazily so a native addon that fails to load reports itself in
     // the pane instead of preventing the whole plugin from loading.
     let vaultRoot: string;
+    let agentDir: string;
     let spawn: typeof import("node-pty").spawn;
     try {
       vaultRoot = vaultRootOf(this);
-      const modulePath = nodePtyPath(vaultRoot, this.pluginDir);
-      ({ spawn } = require(modulePath) as typeof import("node-pty"));
+      agentDir = agentDirPath(vaultRoot, this.pluginDir);
+      // Pi writes its settings, credentials, and sessions here; it must exist.
+      mkdirSync(agentDir, { recursive: true });
+      ({ spawn } = require(nodePtyPath(vaultRoot, this.pluginDir)) as typeof import("node-pty"));
     } catch (error) {
-      this.failToStart(`Could not load node-pty: ${errorMessage(error)}`);
+      this.failToStart(`Could not start the agent: ${errorMessage(error)}`);
       return;
     }
 
-    const spec = resolveLaunch(this.launch, { vaultRoot, processEnv: process.env });
+    const spec = resolveLaunch(this.launch, {
+      vaultRoot,
+      agentDir,
+      settings,
+      processEnv: process.env,
+    });
 
     let proc: IPty;
     try {

@@ -12,7 +12,37 @@ distributed. The spec lives in `.scratch/obsidian-wterm-spec.md`.
 | --- | --- |
 | **Open terminal** | Pi in the vault root, with no note argument |
 | **Open Pi for current note** | Pi in the vault root, with the active note as an `@file` argument |
-| **Open shell** | `fish -l` in the vault root |
+
+There is no shell command; this pane runs Pi and nothing else.
+
+## Configuration
+
+Settings → Community plugins → wterm Pi:
+
+- **DeepSeek API key** — required. A pane opened without one says so and waits.
+- **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
+  sessions started from then on; both can be cycled inside a running session.
+
+Pi has a native `deepseek` provider, so nothing else needs configuring.
+
+The key is stored by Obsidian in this plugin's `data.json` inside the vault, in
+plain text — Obsidian offers no secret storage. It reaches Pi as the
+`DEEPSEEK_API_KEY` environment variable, never as a command-line argument, so it
+does not appear in the process list. It is as safe as your vault, and no safer.
+
+## Self-contained agent
+
+This plugin's Pi does not share anything with a Pi you have installed yourself:
+
+- it uses its own configuration directory, `pi-agent/` inside the plugin folder,
+  so its credentials, sessions, extensions, skills, and trust decisions are
+  separate;
+- every `PI_*` variable in the environment is dropped before it starts, along
+  with any `DEEPSEEK_API_KEY`, so nothing ambient leaks in;
+- `--no-approve` makes it ignore project-local `.pi` files inside the vault;
+- `PI_OFFLINE` suppresses update checks and telemetry, but not model requests.
+
+Your own `~/.pi` is never read or written by this plugin.
 
 Both open a new tab in the right sidebar, expanding it if collapsed. Panes can be
 dragged into the main editor area without interrupting the session. Closing a
