@@ -451,6 +451,15 @@ output appearing over vi. The view tracks the alternate-screen state and marks
 the pane; the stylesheet hides scrollback rows and stops the pane scrolling while
 it is set.
 
+Hiding the session's rows also moves the pane to the top of its scroll, and the
+view has to put it back when the program leaves. The emulator decides whether to
+keep the pane pinned to the newest output by reading its scroll offset at the
+start of every write, so the first line Pi printed after vi quit was read as a
+reader who had scrolled back to the beginning — and the session was left sitting
+at its top rather than where the user had been. The view remembers the offset,
+and whether the pane was pinned to the newest output, as the program starts, and
+restores it the moment the program leaves, before any of that output arrives.
+
 All of this compensates for gaps in the emulator. If wterm handles these itself in
 a later version, the compensation should be deleted rather than kept.
 

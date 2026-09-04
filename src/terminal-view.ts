@@ -47,6 +47,8 @@ export class TerminalView extends ItemView {
   private queries = new TerminalQueryFilter();
   private host: HTMLElement | null = null;
   private altScreen = false;
+  private mainScrollTop = 0;
+  private mainScrollPinned = true;
   private pendingPaste: string | null = null;
   private settleTimer: number | null = null;
   private focusTimer: number | null = null;
@@ -211,6 +213,8 @@ export class TerminalView extends ItemView {
     this.term = null;
     this.host = null;
     this.altScreen = false;
+    this.mainScrollTop = 0;
+    this.mainScrollPinned = true;
     this.started = false;
     this.onDispose(this);
   }
@@ -260,17 +264,45 @@ export class TerminalView extends ItemView {
    * screen, which has no scrollback. The emulator still reports the main
    * screen's scrollback while that is happening, so the renderer keeps drawing
    * the earlier session above the program — Pi's startup output appearing over
-   * vi. Hiding it is a stylesheet matter; this only tracks the state.
+   * vi. Hiding it is a stylesheet matter; this tracks the state and carries the
+   * session's scroll position across the switch.
+   *
+   * The position has to be carried by hand because the pane is the thing that
+   * scrolls, and while the alternate screen is up the session's rows are hidden
+   * and the pane sits at offset zero. The emulator decides whether to keep the
+   * pane pinned to the newest output by reading its scroll offset at the start
+   * of every write, so a pane still sitting at zero when the first line of
+   * output after vi arrives is read as a reader who has scrolled back to the
+   * beginning of the session — and the session stays there, at the top, rather
+   * than where it was left. Restoring the offset the moment the program leaves,
+   * before any of that output is written, is what keeps the place.
    */
   private syncAltScreen(term: WTerm): void {
     const alt = term.bridge?.usingAltScreen() ?? false;
     if (alt === this.altScreen) return;
 
     this.altScreen = alt;
-    this.host?.classList.toggle("pi-alt-screen", alt);
-    // The alternate screen starts at the top; any inherited scroll offset
-    // would leave the program drawn partly out of view.
-    if (alt && this.host) this.host.scrollTop = 0;
+    const host = this.host;
+    if (!host) return;
+
+    if (alt) {
+      // Read before the rows are hidden: hiding them collapses the pane's
+      // scrollable height, and the browser clamps the offset to zero with it.
+      this.mainScrollTop = host.scrollTop;
+      this.mainScrollPinned = isScrolledToBottom(host);
+      host.classList.add("pi-alt-screen");
+      // The alternate screen starts at the top; any inherited scroll offset
+      // would leave the program drawn partly out of view.
+      host.scrollTop = 0;
+      return;
+    }
+
+    host.classList.remove("pi-alt-screen");
+    // Pinned to the newest output is a position too, and one that a saved
+    // offset would miss whenever the session grew while the program was up.
+    host.scrollTop = this.mainScrollPinned
+      ? host.scrollHeight
+      : this.mainScrollTop;
   }
 
   private disposeSubscriptions(): void {
@@ -450,6 +482,15 @@ function isExecutable(command: string, path: string): boolean {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Whether a scrollable element is at its end, with the same few pixels of
+ * tolerance the emulator itself allows, so the two agree about a pane that is
+ * pinned to the newest output.
+ */
+function isScrolledToBottom(el: HTMLElement): boolean {
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 5;
 }
 
 /** Whether an ephemeral state asks for the keyboard. */
