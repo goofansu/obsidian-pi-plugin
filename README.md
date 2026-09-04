@@ -1,16 +1,22 @@
-# Pi for Obsidian
+# obsidian-pi-plugin
 
-A terminal in Obsidian's right sidebar, and a one-command way to hand the note
-you are reading to the Pi coding agent.
+A Pi-powered reading companion in the Obsidian sidebar.
 
-macOS only, Obsidian 1.13.7 or newer. Built and used on Apple Silicon; the
-Intel binaries are shipped but untested.
+## Commands
+
+| Command | Default key | What it does |
+| --- | --- | --- |
+| **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi |
+| **Pi: Add the note you are reading to thread** | `Cmd+Shift+>` | Describes the note you are in and puts that description into Pi's editor. Inserted, never submitted — add your question and press enter yourself. |
+
+## Requirements
+
+Requires macOS, Obsidian 1.13.7 or newer, and pi.
 
 ## Install
 
-Each release carries one archive, `obsidian-pi-plugin-<version>-macos.zip`,
-which is the finished plugin folder with the native pseudo-terminal addon
-already inside it. There is nothing to clone and nothing to build.
+macOS only, Obsidian 1.13.7 or newer. Built and used on Apple Silicon; the
+Intel binaries are shipped but untested.
 
 1. Download the zip from the
    [latest release](https://github.com/goofansu/obsidian-pi-plugin/releases/latest).
@@ -34,93 +40,6 @@ Obsidian's own community-plugin installer could not deliver this plugin: it
 fetches `main.js`, `manifest.json`, and `styles.css` and nothing else, and this
 plugin also needs `node_modules/node-pty` in its folder. Hence the zip.
 
-Requires macOS, Obsidian 1.13.7 or newer, and `pi` on disk: Pi itself is not in
-the archive, and the plugin runs the `pi` on your `PATH`.
-
-## Commands
-
-| Command | Default key | What it does |
-| --- | --- | --- |
-| **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi |
-| **Pi: Add the note you are reading to thread** | `Cmd+Shift+>` | Describes the note you are in and puts that description into Pi's editor. Inserted, never submitted — add your question and press enter yourself. |
-
-Either command starts Pi if it is not running, so there is no separate command
-to open it. If a pane is already in the sidebar, selecting its tab starts it too. Close the pane the way you close any Obsidian pane, or quit Pi.
-
-One session, in the right sidebar, running in your vault. There is no shell
-command: Pi reads any note it needs with its own tools, and the key above hands
-it the one you are looking at.
-
-Pi keeps a tab in the right sidebar, the way Obsidian's own panes do, so there
-is always somewhere to click. Nothing runs until the pane is asked for: select
-its tab, click in it, or use either command. Until then the pane shows a short
-tip saying so. Opening a vault does not launch an agent.
-
-Quitting Pi empties the pane and leaves the tab in place; selecting it again
-starts a fresh session. If Pi exits with an error the output stays on screen,
-showing the exit code, and a keystroke restarts it.
-
-The sidebar expands if it is collapsed. Panes can be dragged into the main
-editor area without interrupting the session. Closing a pane kills its process.
-
-Rebind the key in Settings → Hotkeys if it clashes with something.
-
-## What Pi can do in your vault
-
-Pi is given six tools and no others: `read`, `grep`, `find`, `ls`, `edit`, and
-`write`. It can read your notes, search them, list folders, and change or create
-files. It cannot run shell commands — Pi's `bash` tool is withheld, so there is
-no way for it to run a program, install anything, or reach the network by
-running something that does.
-
-This is a narrowing, not a sandbox. The file tools are not confined to the
-vault: `read` and `write` reach any path your user account can reach. Pi runs
-with your permissions, in your vault as its working directory.
-
-## The note you are reading
-
-Every session begins knowing one thing: which vault it is in, and that its root
-is its working directory. That holds however you move around, so it is told once
-at startup and never needs correcting.
-
-Which *note* you are in is a different matter, and it is yours to send. Press
-`Cmd+Shift+>` and Pi is told, so the next thing you type can say "this" and mean
-it. What it is told:
-
-- the note's path, and how long it is;
-- which line your cursor is on, the headings above it, and which lines are
-  selected;
-- its properties, its aliases, and its tags;
-- its heading outline;
-- what each of its links resolves to, and which links are not written yet;
-- which notes link to it.
-
-None of the note's text is sent. Pi is running in the vault, so it reads the
-file itself if it needs to — and reads the linked and linking notes the same
-way, from the paths it was given. Those paths are the part worth sending:
-`[[Some note]]` names a file that only Obsidian's own rules can find, and
-backlinks are not visible from the file at all.
-
-Nothing is submitted. The description lands in Pi's editor for you to add your
-question to, so no answer is generated and no turn is spent until you press
-enter. Pressing the key with the keyboard already in Pi works too: Obsidian
-still reports the note you were last in.
-
-It describes the moment you pressed the key, not a live view. Move to another
-note and Pi still knows the old one — press the key again to describe where you
-are now.
-
-This is a deliberate key press rather than something a session does on its own,
-because Obsidian's idea of "the note you are in" is really the last file you
-touched — right often enough to be tempting, and wrong often enough that a
-session could quietly begin on the wrong note. If there is no note in view, the
-key says so and sends nothing.
-
-Nothing about any note reaches DeepSeek until you press it. When you do, the
-description goes with your next request, note titles and properties included, so
-sending a private note describes that note to the model. The vault's name goes
-with every session regardless, since that is the one line Pi starts with.
-
 ## Configuration
 
 Settings → Community plugins → Pi:
@@ -134,10 +53,3 @@ Settings → Community plugins → Pi:
 - **DeepSeek API key** — required. A pane opened without one says so and waits.
 - **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
   sessions started from then on; both can be cycled inside a running session.
-
-Pi has a native `deepseek` provider, so nothing else needs configuring.
-
-The key is stored by Obsidian in this plugin's `data.json` inside the vault, in
-plain text — Obsidian offers no secret storage. It reaches Pi as the
-`DEEPSEEK_API_KEY` environment variable, never as a command-line argument, so it
-does not appear in the process list. It is as safe as your vault, and no safer.
