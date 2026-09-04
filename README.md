@@ -2,6 +2,8 @@
 
 A Pi-powered reading companion in the Obsidian sidebar.
 
+![The Pi pane beside a note in Obsidian: the note being read has been handed to Pi, which describes it and answers a question about it](images/screenshot.png)
+
 ## Commands
 
 | Command | Default key | What it does |
