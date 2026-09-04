@@ -1,15 +1,15 @@
 # obsidian-pi-plugin
 
-A Pi-powered reading companion in the Obsidian sidebar.
+A pi-powered reading companion in the Obsidian sidebar.
 
-![The Pi pane beside a note in Obsidian: the note being read has been handed to Pi, which describes it and answers a question about it](images/screenshot.png)
+![The pi pane beside a note in Obsidian: the note being read has been handed to pi, which describes it and answers a question about it](images/screenshot.png)
 
 ## Commands
 
 | Command | Default key | What it does |
 | --- | --- | --- |
-| **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi |
-| **Pi: Add the note you are reading to thread** | `Cmd+Shift+>` | Describes the note you are in and puts that description into Pi's editor. Inserted, never submitted — add your question and press enter yourself. |
+| **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to pi, or back to your note if you are already in pi |
+| **Pi: Add the note you are reading to thread** | `Cmd+Shift+>` | Describes the note you are in and puts that description into pi's editor. Inserted, never submitted — add your question and press enter yourself. |
 
 ## Requirements
 
