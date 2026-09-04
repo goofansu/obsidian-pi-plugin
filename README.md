@@ -11,10 +11,6 @@ A pi-powered reading companion in the Obsidian sidebar.
 | **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to pi, or back to your note if you are already in pi |
 | **Pi: Add the note you are reading to thread** | `Cmd+Shift+>` | Describes the note you are in and puts that description into pi's editor. Inserted, never submitted — add your question and press enter yourself. |
 
-## Requirements
-
-Requires macOS, Obsidian 1.13.7 or newer, and pi.
-
 ## Install
 
 macOS only, Obsidian 1.13.7 or newer. Built and used on Apple Silicon; the
