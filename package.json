@@ -1,6 +1,6 @@
 {
   "name": "obsidian-pi-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Run the Pi coding agent in an Obsidian sidebar pane.",
   "type": "module",
