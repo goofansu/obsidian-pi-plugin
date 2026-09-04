@@ -65,6 +65,18 @@ editor area without interrupting the session. Closing a pane kills its process.
 
 Rebind the key in Settings → Hotkeys if it clashes with something.
 
+## What Pi can do in your vault
+
+Pi is given six tools and no others: `read`, `grep`, `find`, `ls`, `edit`, and
+`write`. It can read your notes, search them, list folders, and change or create
+files. It cannot run shell commands — Pi's `bash` tool is withheld, so there is
+no way for it to run a program, install anything, or reach the network by
+running something that does.
+
+This is a narrowing, not a sandbox. The file tools are not confined to the
+vault: `read` and `write` reach any path your user account can reach. Pi runs
+with your permissions, in your vault as its working directory.
+
 ## The note you are reading
 
 Every session begins knowing one thing: which vault it is in, and that its root

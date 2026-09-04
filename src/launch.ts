@@ -47,6 +47,29 @@ export const PATH_APPEND = ["/usr/bin", "/bin"];
  */
 export const PI_ARGS = ["--approve", "--no-skills"];
 
+/**
+ * The only tools the agent is given, as an allowlist rather than a denylist:
+ * a tool added by a later pi is off until it is named here, which is the way
+ * round that cannot quietly widen what the agent can do.
+ *
+ * What this leaves out is the shell — pi's `bash`, and `powershell` beside it.
+ * The agent's work here is notes: reading them, searching them, and writing
+ * them. Everything it needs for that is below, and a shell is the one tool
+ * whose reach is not describable, since it runs whatever it likes.
+ *
+ * Each name is pi's own, spelled as its tool registry spells it. A name pi
+ * does not recognise is dropped without a word rather than refused, so a typo
+ * here would silently take a tool away instead of failing.
+ */
+export const PI_TOOLS = [
+  "read",
+  "grep",
+  "find",
+  "ls",
+  "edit",
+  "write",
+] as const;
+
 import {
   API_KEY_ENV,
   modelCycleList,
@@ -90,6 +113,8 @@ export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
     // Both models, so they can be cycled from inside the session.
     "--models",
     modelCycleList(),
+    "--tools",
+    PI_TOOLS.join(","),
     // Where the session is, and nothing about any note. An appended system
     // prompt starts no turn — Pi simply knows — whereas a message or an
     // `@file` argument is submitted the moment Pi starts, which would answer a

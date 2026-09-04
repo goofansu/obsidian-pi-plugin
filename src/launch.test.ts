@@ -6,6 +6,7 @@ import {
   LOCALE,
   nodePtyPath,
   PI_COMMAND,
+  PI_TOOLS,
   resolveLaunch,
 } from "./launch.js";
 import { API_KEY_ENV, DEFAULT_SETTINGS, type Settings } from "./settings.js";
@@ -88,6 +89,43 @@ describe("resolveLaunch — command and arguments", () => {
     expect(args[args.indexOf("--append-system-prompt") + 1]).toBe(
       composeVaultContext(VAULT_NAME),
     );
+  });
+
+  it("gives the agent exactly the tools it is meant to have", () => {
+    const args = resolve().args;
+
+    expect(args[args.indexOf("--tools") + 1]).toBe(
+      "read,grep,find,ls,edit,write",
+    );
+  });
+
+  it("withholds the shell, whose reach is not describable", () => {
+    // pi's own names for it, on both platforms it ships one for.
+    const named = resolve().args[resolve().args.indexOf("--tools") + 1];
+
+    expect(named.split(",")).not.toContain("bash");
+    expect(named.split(",")).not.toContain("powershell");
+  });
+
+  it("names tools as an allowlist, so a later pi's new tool is off until asked for", () => {
+    const spec = resolve();
+
+    expect(spec.args).toContain("--tools");
+    expect(spec.args).not.toContain("--exclude-tools");
+  });
+
+  it("passes each name as pi's registry spells it, since an unknown one is dropped", () => {
+    // pi looks each name up and silently skips what it does not recognise, so
+    // a typo would remove a tool rather than fail. Spelled out here so the
+    // list cannot drift without a test changing with it.
+    expect([...PI_TOOLS]).toEqual([
+      "read",
+      "grep",
+      "find",
+      "ls",
+      "edit",
+      "write",
+    ]);
   });
 
   it("says nothing about any note, which the user sends by hand", () => {

@@ -241,6 +241,17 @@ Rules the resolver encodes:
   on its own: skills are also discovered from `~/.agents/skills` and from
   `.agents/skills` in the working directory and its parents, and neither path
   moves with `PI_CODING_AGENT_DIR`. A flag is the only way to be sure none load.
+- `--tools` names the six tools the agent may use — `read`, `grep`, `find`,
+  `ls`, `edit`, and `write` — and by naming them, withholds every other. An
+  allowlist rather than `--exclude-tools`, so a tool a later Pi adds is off
+  until it is asked for; a denylist would let a new tool arrive enabled.
+  What it withholds that Pi would otherwise give is the shell, `bash` and
+  `powershell` alike. The agent's work here is notes — reading them, searching
+  them, writing them — and the six cover that, whereas a shell's reach cannot
+  be described at all, since it runs whatever it is handed. Pi looks each name
+  up in its tool registry and drops one it does not recognise without a word,
+  so the names are its own spellings and a test fixes them; a typo would take
+  a tool away silently rather than fail. Verified against pi 0.84.4.
 - The configured model is passed as `--model provider/id`, and both models are
   passed as `--models` so they can be cycled inside a session.
 - `--use-theme` names Pi's own `light` or `dark` theme, matching Obsidian's

@@ -268,8 +268,16 @@ hand, because the rest needs a real Obsidian and Electron runtime.
 
 ## Note on trust
 
-Pi launched here runs with your full user permissions. It is not sandboxed to the
-vault. The plugin's contribution is narrow: absolute executable paths, arguments
-passed as an array and never interpolated into a shell string, the vault root as
-working directory, processes killed with their pane, and nothing auto-submitted
-on your behalf.
+Pi launched here runs with your full user permissions. It is not sandboxed to
+the vault, and the file tools it does have are not confined to it either: `read`
+and `write` reach any path you could reach yourself. The plugin's contribution
+is narrow: absolute executable paths, arguments passed as an array and never
+interpolated into a shell string, the vault root as working directory, processes
+killed with their pane, and nothing auto-submitted on your behalf.
+
+It does withhold one thing outright. `--tools` names six — `read`, `grep`,
+`find`, `ls`, `edit`, `write` — which leaves out Pi's shell, `bash` and
+`powershell`. That is a real narrowing, since a shell runs anything at all, but
+it is not a sandbox and should not be described as one: the agent can still read
+and write outside the vault. It is an allowlist so that a tool added by a later
+Pi stays off until this list names it.
