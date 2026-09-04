@@ -6,6 +6,8 @@ import {
   Setting,
   type WorkspaceLeaf,
 } from "obsidian";
+import { readActiveNote } from "./active-note.js";
+import { composeNoteContext } from "./note-context.js";
 import {
   DEFAULT_SETTINGS,
   MODELS,
@@ -55,10 +57,10 @@ export default class PiPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "add-selection-to-thread",
-      name: "Add selection to thread",
+      id: "add-note-to-thread",
+      name: "Add the note you are reading to thread",
       hotkeys: [{ modifiers: ["Mod", "Shift"], key: "." }],
-      callback: () => void this.addSelectionToThread(),
+      callback: () => void this.addNoteToThread(),
     });
   }
 
@@ -94,14 +96,23 @@ export default class PiPlugin extends Plugin {
   }
 
   /**
-   * The selection is read from the last active editor rather than from whatever
-   * has focus, so this works while the keyboard is already in Pi.
+   * Describes the note the user is reading — its path, properties, outline,
+   * cursor, links, and backlinks — and puts that description into Pi's editor
+   * unsubmitted, so the user adds their question to it before sending.
+   *
+   * Deliberately the user's own gesture rather than something a starting
+   * session does for them. Obsidian's idea of the active note is the last file
+   * the user was in, which is right often enough to be tempting and wrong often
+   * enough that a session could silently begin on the wrong note. A key press
+   * says which moment the user meant.
+   *
+   * The note is read from the last active editor rather than from whatever
+   * holds the keyboard, so this still works once the keyboard is inside Pi.
    */
-  private async addSelectionToThread(): Promise<void> {
-    const selection =
-      this.app.workspace.activeEditor?.editor?.getSelection() ?? "";
-    if (selection.trim() === "") {
-      new Notice("Select some text in a note first");
+  private async addNoteToThread(): Promise<void> {
+    const context = this.readNoteContext();
+    if (context === null) {
+      new Notice("Pi: no note in view — open the note you want to send first");
       return;
     }
 
@@ -114,8 +125,21 @@ export default class PiPlugin extends Plugin {
     }
 
     if (leaf) await this.app.workspace.revealLeaf(leaf);
-    view.paste(selection);
+    view.paste(context);
     view.focusTerminal();
+  }
+
+  /**
+   * The description of the note in view, or null when there is none to
+   * describe. A failure reading Obsidian's caches counts as none: the user is
+   * told either way, which is the whole point of asking for this by hand.
+   */
+  private readNoteContext(): string | null {
+    try {
+      return composeNoteContext(readActiveNote(this.app));
+    } catch {
+      return null;
+    }
   }
 
   /** The note the user was last in, which is where the keyboard goes back to. */
@@ -202,20 +226,6 @@ class PiSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.apiKey)
           .onChange(async (value) => {
             this.plugin.settings.apiKey = value.trim();
-            await this.plugin.saveSettings();
-          });
-      });
-
-    new Setting(this.containerEl)
-      .setName("Attach the note you are reading")
-      .setDesc(
-        "When a session starts, tell Pi which note is in view: its path, its properties, its outline, where your cursor is, what its links resolve to, and which notes link to it. The note's text is not sent — Pi reads the file itself. Applies to sessions started from now on.",
-      )
-      .addToggle((toggle) => {
-        toggle
-          .setValue(this.plugin.settings.attachNoteContext)
-          .onChange(async (value) => {
-            this.plugin.settings.attachNoteContext = value;
             await this.plugin.saveSettings();
           });
       });

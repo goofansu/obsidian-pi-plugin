@@ -54,6 +54,7 @@ import {
   parsePathDirs,
   type Settings,
 } from "./settings.js";
+import { composeVaultContext } from "./vault-context.js";
 
 export type SpawnSpec = {
   command: string;
@@ -67,16 +68,13 @@ export type Appearance = "light" | "dark";
 
 export type LaunchContext = {
   vaultRoot: string;
+  /** The vault's name as Obsidian shows it, which is what Pi is told. */
+  vaultName: string;
   /** The plugin's private Pi configuration directory. */
   agentDir: string;
   settings: Settings;
   appearance: Appearance;
   processEnv: NodeJS.ProcessEnv;
-  /**
-   * What Pi should know about the note the user was reading, composed by
-   * `note-context.ts`, or null for none — no note in view, or the setting off.
-   */
-  noteContext: string | null;
 };
 
 export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
@@ -92,13 +90,13 @@ export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
     // Both models, so they can be cycled from inside the session.
     "--models",
     modelCycleList(),
+    // Where the session is, and nothing about any note. An appended system
+    // prompt starts no turn — Pi simply knows — whereas a message or an
+    // `@file` argument is submitted the moment Pi starts, which would answer a
+    // question the user had not asked yet.
+    "--append-system-prompt",
+    composeVaultContext(ctx.vaultName),
   ];
-
-  // The note reaches Pi as an addition to its system prompt rather than as a
-  // message or an `@file` argument: both of those are submitted the moment Pi
-  // starts, which would spend a turn on a question the user has not asked yet.
-  // An appended system prompt starts no turn at all — Pi simply knows.
-  if (ctx.noteContext) args.push("--append-system-prompt", ctx.noteContext);
 
   return {
     command: PI_COMMAND,

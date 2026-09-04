@@ -42,14 +42,14 @@ the archive, and the plugin runs the `pi` on your `PATH`.
 | Command | Default key | What it does |
 | --- | --- | --- |
 | **Pi: Toggle focus** | `Cmd+Shift+/` | Moves the keyboard to Pi, or back to your note if you are already in Pi |
-| **Pi: Add selection to thread** | `Cmd+Shift+>` | Puts the selected note text into Pi's editor and focuses it. Inserted, never submitted — add your question and press enter yourself. |
+| **Pi: Add the note you are reading to thread** | `Cmd+Shift+>` | Describes the note you are in and puts that description into Pi's editor. Inserted, never submitted — add your question and press enter yourself. |
 
 Either command starts Pi if it is not running, so there is no separate command
 to open it. If a pane is already in the sidebar, selecting its tab starts it too. Close the pane the way you close any Obsidian pane, or quit Pi.
 
 One session, in the right sidebar, running in your vault. There is no shell
-command and no per-note command: a session already starts on the note you are
-reading, and Pi reads any other note it needs with its own tools.
+command: Pi reads any note it needs with its own tools, and the key above hands
+it the one you are looking at.
 
 Pi keeps a tab in the right sidebar, the way Obsidian's own panes do, so there
 is always somewhere to click. Nothing runs until the pane is asked for: select
@@ -67,8 +67,13 @@ Rebind the key in Settings → Hotkeys if it clashes with something.
 
 ## The note you are reading
 
-A session starts already knowing which note you were in, so the first thing you
-type can say "this" and mean it. When Pi starts, it is told:
+Every session begins knowing one thing: which vault it is in, and that its root
+is its working directory. That holds however you move around, so it is told once
+at startup and never needs correcting.
+
+Which *note* you are in is a different matter, and it is yours to send. Press
+`Cmd+Shift+>` and Pi is told, so the next thing you type can say "this" and mean
+it. What it is told:
 
 - the note's path, and how long it is;
 - which line your cursor is on, the headings above it, and which lines are
@@ -84,19 +89,25 @@ way, from the paths it was given. Those paths are the part worth sending:
 `[[Some note]]` names a file that only Obsidian's own rules can find, and
 backlinks are not visible from the file at all.
 
-Nothing is submitted. This arrives as something Pi knows rather than as a
-message, so no answer is generated and no turn is spent until you ask
-something.
+Nothing is submitted. The description lands in Pi's editor for you to add your
+question to, so no answer is generated and no turn is spent until you press
+enter. Pressing the key with the keyboard already in Pi works too: Obsidian
+still reports the note you were last in.
 
-It is a snapshot from the moment the session started, not a live view. Move to
-another note and Pi still knows the old one; the text it is given says so, so
-it checks rather than assumes. Quitting and starting again captures the note
-you are in then.
+It describes the moment you pressed the key, not a live view. Move to another
+note and Pi still knows the old one — press the key again to describe where you
+are now.
 
-All of it goes to DeepSeek with the session's first request, note titles and
-properties included, so a session started on a private note describes that note
-to the model. Turn the setting off if you would rather nothing about the vault
-was sent until you ask for it.
+This is a deliberate key press rather than something a session does on its own,
+because Obsidian's idea of "the note you are in" is really the last file you
+touched — right often enough to be tempting, and wrong often enough that a
+session could quietly begin on the wrong note. If there is no note in view, the
+key says so and sends nothing.
+
+Nothing about any note reaches DeepSeek until you press it. When you do, the
+description goes with your next request, note titles and properties included, so
+sending a private note describes that note to the model. The vault's name goes
+with every session regardless, since that is the one line Pi starts with.
 
 ## Configuration
 
@@ -109,10 +120,6 @@ Settings → Community plugins → Pi:
   the answers are the directory holding node, and npm's prefix with `/bin`.
   A pane that cannot find `pi` says so and names this setting.
 - **DeepSeek API key** — required. A pane opened without one says so and waits.
-- **Attach the note you are reading** — on by default. What is sent, and what
-  is not, is [above](#the-note-you-are-reading). Turning it off leaves Pi with
-  the vault as its working directory and nothing else. Applies to sessions
-  started from then on.
 - **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
   sessions started from then on; both can be cycled inside a running session.
 

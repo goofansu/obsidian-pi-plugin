@@ -5,7 +5,7 @@
  * every rule about what Pi is told stays in the pure module beside the tests.
  *
  * Everything here comes from Obsidian's public API and from a cache that is
- * already in memory, so a session start costs no file reads.
+ * already in memory, so the command costs no file reads.
  */
 
 import {
@@ -29,10 +29,9 @@ import {
  * that is not a file.
  *
  * `getActiveFile` reports the last file the user was in rather than whatever
- * holds the keyboard, so this is still the user's note when it is called from
- * the sidebar pane that Pi is starting in. That is the whole reason the note
- * can be captured at all: revealing Pi's pane to start it must not change the
- * answer.
+ * holds the keyboard, so this is still the user's note when the command is used
+ * with the keyboard already inside Pi's pane. That is the whole reason the note
+ * can be captured at all: revealing Pi's pane must not change the answer.
  */
 export function readActiveNote(app: App): NoteSnapshot | null {
   const file = app.workspace.getActiveFile();
@@ -41,7 +40,6 @@ export function readActiveNote(app: App): NoteSnapshot | null {
   const cache = app.metadataCache.getFileCache(file);
 
   return {
-    vaultName: app.vault.getName(),
     path: file.path,
     frontmatter: frontmatterOf(cache),
     aliases: parseFrontMatterAliases(cache?.frontmatter ?? null) ?? [],
@@ -66,8 +64,8 @@ export function readActiveNote(app: App): NoteSnapshot | null {
  *
  * The editor is checked against the file first. Obsidian keeps the last active
  * editor after focus moves to a sidebar pane, which is what makes this readable
- * from Pi's pane — but a stale editor for some other note would put a cursor
- * position on the wrong note, so a mismatch is treated as no editor.
+ * with the keyboard in Pi — but a stale editor for some other note would put a
+ * cursor position on the wrong note, so a mismatch is treated as no editor.
  */
 function editorState(
   app: App,

@@ -1,7 +1,17 @@
 /**
- * What Pi is told about the note the user was reading, and nothing else. Pure:
+ * What Pi is told about the note the user is reading, and nothing else. Pure:
  * no Obsidian, no PTY, no DOM. `src/active-note.ts` reads Obsidian's caches
- * into a snapshot; this turns a snapshot into the text Pi is started with.
+ * into a snapshot; this turns a snapshot into the text the user hands to Pi.
+ *
+ * It is written in the user's own voice, because that is where it lands: the
+ * command pastes it into Pi's editor unsubmitted, so the user can add their
+ * question to it before pressing enter.
+ *
+ * It ends where the facts end. It carries no closing note saying that it is a
+ * snapshot, nor any instruction to read the file: a pasted message is already
+ * read as true when sent, and the standing instruction to open the path lives
+ * in the session's system prompt, where it is paid once rather than on every
+ * press of the key. See `vault-context.ts`.
  *
  * The note's own text is deliberately absent. Pi runs in the vault and reads
  * any file it wants with its own tools, so repeating a note it can open would
@@ -27,7 +37,6 @@ export type NoteHeading = {
 export type NoteSelection = { from: number; to: number };
 
 export type NoteSnapshot = {
-  vaultName: string;
   /** Vault-relative, which is also the path from Pi's working directory. */
   path: string;
   /** Frontmatter as Obsidian parsed it, or null when the note has none. */
@@ -73,19 +82,19 @@ export const LIMITS = {
 const OMITTED_KEYS = new Set(["alias", "aliases", "position", "tag", "tags"]);
 
 /**
- * The text Pi is started with, or null when there is nothing worth saying — no
- * note in view, in which case Pi is given no note context at all rather than a
- * note-shaped blank.
+ * The text handed to Pi, or null when there is no note in view. Null rather
+ * than a note-shaped blank: the caller says so to the user instead, because
+ * this is something they asked for and it did not happen.
  */
 export function composeNoteContext(note: NoteSnapshot | null): string | null {
   if (!note) return null;
 
   const lines: string[] = [
-    "## The note in view",
+    "## The note I am reading",
     "",
-    `This session was started from a pane inside Obsidian, in the vault "${note.vaultName}".`,
-    "The working directory is the vault's root, so every path below is one you can open.",
-    "",
+    // Which vault, and that its root is the working directory, is already in
+    // the session's system prompt — see `vault-context.ts`. Repeating it in
+    // every paste would only spend context saying what Pi was told at startup.
     `Path: ${code(note.path)}`,
   ];
 
@@ -103,10 +112,6 @@ export function composeNoteContext(note: NoteSnapshot | null): string | null {
     ...listSection("Links to", linkLines(note.links), LIMITS.links),
     ...listSection("Embeds", linkLines(note.embeds), LIMITS.embeds),
     ...listSection("Linked from", note.backlinks.map(code), LIMITS.backlinks),
-    "",
-    "That is where the user was when this session started, not necessarily where",
-    "they are now: nothing above is updated as they move around the vault. The",
-    "note's text is not included here — read the file.",
   );
 
   return lines.join("\n");

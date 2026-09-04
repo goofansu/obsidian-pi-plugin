@@ -8,7 +8,6 @@ import {
 } from "./note-context.js";
 
 const NOTE: NoteSnapshot = {
-  vaultName: "Notes",
   path: "Projects/Pi plugin.md",
   frontmatter: null,
   aliases: [],
@@ -53,8 +52,12 @@ describe("the note itself", () => {
     expect(lines()).toContain("Path: `Projects/Pi plugin.md`");
   });
 
-  it("names the vault, so the agent can say where it is", () => {
-    expect(compose()).toContain('vault "Notes"');
+  it("leaves the vault to the session's own system prompt", () => {
+    // Which vault, and that its root is the working directory, is told once at
+    // startup by `vault-context.ts`. Repeating it in every paste would spend
+    // context restating what pi already knows.
+    expect(compose()).not.toMatch(/vault "/);
+    expect(compose()).not.toContain("working directory");
   });
 
   it("never includes the note's text, which pi can read for itself", () => {
@@ -62,8 +65,24 @@ describe("the note itself", () => {
     expect(Object.keys(NOTE)).not.toContain("content");
   });
 
-  it("says the description is a snapshot, not a live view", () => {
-    expect(compose()).toContain("when this session started");
+  it("speaks as the user, since it lands in their editor for them to send", () => {
+    expect(compose()).toContain("## The note I am reading");
+  });
+
+  it("ends where the facts end, with no closing note about itself", () => {
+    // A pasted message is already read as true when sent, so saying it is a
+    // snapshot is words spent on what its position in the thread conveys.
+    // Telling pi to read the file is said once at startup instead.
+    const composed = compose();
+
+    expect(composed).not.toContain("snapshot");
+    expect(composed).not.toContain("read the file");
+    expect(composed.trimEnd()).toBe(composed);
+  });
+
+  it("stops after the last fact it has to report", () => {
+    expect(lines({ backlinks: ["Index.md"] }).at(-1)).toBe("- `Index.md`");
+    expect(lines().at(-1)).toBe("Path: `Projects/Pi plugin.md`");
   });
 
   it("reports the length when the note is open in an editor", () => {

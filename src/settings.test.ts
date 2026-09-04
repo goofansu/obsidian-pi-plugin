@@ -30,23 +30,13 @@ describe("the two models on offer", () => {
   });
 });
 
-describe("attaching the note in view", () => {
-  it("is on by default, since it is the point of running pi here", () => {
-    expect(DEFAULT_SETTINGS.attachNoteContext).toBe(true);
-  });
-
-  it("can be turned off and stays off", () => {
-    expect(parseSettings({ attachNoteContext: false }).attachNoteContext).toBe(
-      false,
+describe("settings no longer on offer", () => {
+  it("drops a stored attachNoteContext rather than carrying it forward", () => {
+    // The note reaches pi by a key press now, so there is nothing to configure
+    // and nothing to read back out of an older data file.
+    expect(parseSettings({ attachNoteContext: false })).toEqual(
+      DEFAULT_SETTINGS,
     );
-  });
-
-  it("falls back to on for anything that is not a boolean", () => {
-    for (const stored of ["no", 0, null, undefined, {}]) {
-      expect(
-        parseSettings({ attachNoteContext: stored }).attachNoteContext,
-      ).toBe(true);
-    }
   });
 });
 
@@ -79,7 +69,6 @@ describe("parseSettings is total", () => {
     ).toEqual({
       apiKey: "sk-abc",
       model: "deepseek-v4-pro",
-      attachNoteContext: true,
       pathDirs: "",
     });
   });

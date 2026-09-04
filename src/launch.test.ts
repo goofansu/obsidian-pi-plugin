@@ -9,15 +9,16 @@ import {
   resolveLaunch,
 } from "./launch.js";
 import { API_KEY_ENV, DEFAULT_SETTINGS, type Settings } from "./settings.js";
+import { composeVaultContext } from "./vault-context.js";
 
 const VAULT = "/Users/james/Vault";
+const VAULT_NAME = "Vault";
 const AGENT_DIR =
   "/Users/james/Vault/.obsidian/plugins/obsidian-pi-plugin/pi-agent";
 
 const SETTINGS: Settings = {
   apiKey: "sk-test",
   model: "deepseek-v4-flash",
-  attachNoteContext: true,
   pathDirs: "",
 };
 
@@ -25,15 +26,14 @@ const resolve = (
   processEnv: NodeJS.ProcessEnv = {},
   settings: Settings = SETTINGS,
   appearance: "light" | "dark" = "dark",
-  noteContext: string | null = null,
 ) =>
   resolveLaunch({
     vaultRoot: VAULT,
+    vaultName: VAULT_NAME,
     agentDir: AGENT_DIR,
     settings,
     appearance,
     processEnv,
-    noteContext,
   });
 
 describe("resolveLaunch — command and arguments", () => {
@@ -82,29 +82,32 @@ describe("resolveLaunch — command and arguments", () => {
     );
   });
 
-  it("hands the note the user was reading to pi as an added system prompt", () => {
-    const args = resolve({}, SETTINGS, "dark", "## The note in view").args;
+  it("tells pi which vault it is in, as an added system prompt", () => {
+    const args = resolve().args;
 
     expect(args[args.indexOf("--append-system-prompt") + 1]).toBe(
-      "## The note in view",
+      composeVaultContext(VAULT_NAME),
     );
   });
 
-  it("never submits the note as a message, which would spend a turn", () => {
-    // An initial message or an `@file` argument is sent the moment pi starts.
-    // The note is context, not a question, so it travels in the system prompt.
-    const spec = resolve({}, SETTINGS, "dark", "## The note in view");
-    const trailing = spec.args[spec.args.length - 1];
+  it("says nothing about any note, which the user sends by hand", () => {
+    // The note the user is reading reaches pi only when they press the key for
+    // it, as a paste into pi's editor. Nothing note-shaped is launched with.
+    const spec = resolve();
+    const appended = spec.args[spec.args.indexOf("--append-system-prompt") + 1];
 
-    expect(trailing).toBe("## The note in view");
-    expect(spec.args[spec.args.length - 2]).toBe("--append-system-prompt");
+    expect(appended).not.toContain("Path:");
     expect(spec.args.some((arg) => arg.startsWith("@"))).toBe(false);
   });
 
-  it("passes no such argument when there is no note to describe", () => {
-    expect(resolve().args).not.toContain("--append-system-prompt");
-    expect(resolve({}, SETTINGS, "dark", "").args).not.toContain(
-      "--append-system-prompt",
+  it("never submits that context as a message, which would spend a turn", () => {
+    // An initial message or an `@file` argument is sent the moment pi starts.
+    // This is context, not a question, so it travels in the system prompt.
+    const spec = resolve();
+
+    expect(spec.args[spec.args.length - 2]).toBe("--append-system-prompt");
+    expect(spec.args[spec.args.length - 1]).toBe(
+      composeVaultContext(VAULT_NAME),
     );
   });
 

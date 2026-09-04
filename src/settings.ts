@@ -18,14 +18,6 @@ export type Settings = {
   apiKey: string;
   model: ModelId;
   /**
-   * Whether a starting session is told which note the user is reading, along
-   * with its properties, outline, links, and backlinks. On by default, because
-   * it is the reason to run the agent beside the notes rather than in a
-   * terminal, and off for anyone who would rather the provider was told nothing
-   * about the vault beyond what they ask.
-   */
-  attachNoteContext: boolean;
-  /**
    * Extra directories for the agent's `PATH`, as typed. Kept as the raw string
    * so the settings screen shows back exactly what was entered; `parsePathDirs`
    * turns it into the list actually used.
@@ -36,7 +28,6 @@ export type Settings = {
 export const DEFAULT_SETTINGS: Settings = {
   apiKey: "",
   model: "deepseek-v4-flash",
-  attachNoteContext: true,
   pathDirs: "",
 };
 
@@ -60,20 +51,15 @@ export function parseSettings(stored: unknown): Settings {
     return { ...DEFAULT_SETTINGS };
   }
 
-  const { apiKey, model, attachNoteContext, pathDirs } = stored as {
+  const { apiKey, model, pathDirs } = stored as {
     apiKey?: unknown;
     model?: unknown;
-    attachNoteContext?: unknown;
     pathDirs?: unknown;
   };
   return {
     apiKey:
       typeof apiKey === "string" ? apiKey.trim() : DEFAULT_SETTINGS.apiKey,
     model: isModelId(model) ? model : DEFAULT_SETTINGS.model,
-    attachNoteContext:
-      typeof attachNoteContext === "boolean"
-        ? attachNoteContext
-        : DEFAULT_SETTINGS.attachNoteContext,
     pathDirs:
       typeof pathDirs === "string" ? pathDirs : DEFAULT_SETTINGS.pathDirs,
   };
