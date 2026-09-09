@@ -1,8 +1,8 @@
 name: Release
 
-# Tags are the trigger: pushing 0.0.1 (or v0.0.1) builds the macOS archive and
-# publishes it. The version in the tag has to match manifest.json, which the
-# packaging script checks before it writes anything.
+# Tags are the trigger: pushing 0.0.1 builds the macOS archive and publishes it.
+# The version in the tag has to match manifest.json, which the packaging script
+# checks before it writes anything.
 on:
   push:
     tags: ["*.*.*"]
