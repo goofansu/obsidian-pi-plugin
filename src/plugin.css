@@ -29,6 +29,28 @@
   display: none;
 }
 
+/* A row whose text reaches the last column, and the grid as a whole, are given
+   the background of their final cell, so that a line a program paints right
+   across the screen carries on through the strip the cells do not cover — the
+   width left over below a whole column, and the emulator's padding.
+
+   Pi's editor draws its own cursor as a reverse-video space, and the moment the
+   line being typed fills the width that space is the final cell. Reverse video
+   over no colours of its own resolves to the default foreground, so the row is
+   painted in it from one edge of the pane to the other, and the typed line,
+   drawn in that same colour, disappears into the bar. At the bottom right of
+   the grid the same reading would flood the whole pane.
+
+   Cells still paint their own backgrounds, so a background a program really did
+   set survives this; all that is given up is the last few pixels of a full-width
+   one. `!important` because the emulator sets these on the elements themselves.
+   The reading is @wterm/dom's own, and is still there in 0.5.0. */
+.pi-terminal .term-row,
+.pi-terminal .term-grid {
+  background: none !important;
+  box-shadow: none !important;
+}
+
 /* `.wterm` is the emulator library's own class, applied by it to this element.
    It is the one name here that is not ours to choose, and it appears only where
    a rule has to reach the library's styling.
