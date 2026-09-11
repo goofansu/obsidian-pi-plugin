@@ -2,7 +2,7 @@
  * Answers, and where necessary hides, the queries programs send to a terminal
  * that the wterm core does not handle itself.
  *
- * Two kinds matter here:
+ * Three kinds matter here:
  *
  * - Device attributes (`CSI c`, `CSI > c`). Pi sends one at startup and blocks
  *   for ten seconds waiting for a reply. The core consumes the query but never
@@ -11,6 +11,9 @@
  *   a batch of these. The core does not recognise the sequence at all, so it
  *   prints the payload as text — the `+q436f+q6b75…` rubbish across the top of
  *   the pane. These must be removed from the stream as well as answered.
+ * - Appearance queries and notification modes. Pi uses these to select and
+ *   update an automatic light/dark theme. They are answered or tracked here
+ *   and removed because the core does not implement them.
  */
 
 /** VT100 with Advanced Video Option. */
@@ -29,9 +32,14 @@ const MAX_PENDING = 256;
 // biome-ignore-start lint/suspicious/noControlCharactersInRegex: matching escape sequences
 const DEVICE_ATTRIBUTES = /^\x1b\[(>?)([0-9;]*)c/;
 const CAPABILITY_QUERY = /^\x1bP\+q([0-9a-fA-F;]*)(?:\x1b\\|\x07)/;
-/** A trailing fragment that could still turn into either query. */
-const PARTIAL = /\x1b(\[[>0-9;]*|P\+?q?[0-9a-fA-F;]*\x1b?)?$/;
+const APPEARANCE_QUERY = "\x1b[?996n";
+const ENABLE_APPEARANCE_NOTIFICATIONS = "\x1b[?2031h";
+const DISABLE_APPEARANCE_NOTIFICATIONS = "\x1b[?2031l";
+/** A trailing fragment that could still turn into a supported query. */
+const PARTIAL = /\x1b(\[[>?0-9;]*|P\+?q?[0-9a-fA-F;]*\x1b?)?$/;
 // biome-ignore-end lint/suspicious/noControlCharactersInRegex: matching escape sequences
+
+export type Appearance = "light" | "dark";
 
 export type Filtered = {
   /** What should reach the terminal. */
@@ -42,13 +50,19 @@ export type Filtered = {
 
 export class TerminalQueryFilter {
   private carry = "";
+  private appearanceNotifications = false;
 
   /** How much of a possible query is buffered. Exposed for tests. */
   get pending(): number {
     return this.carry.length;
   }
 
-  process(chunk: string): Filtered {
+  /** A report for a runtime transition, when the process subscribed to them. */
+  appearanceChanged(appearance: Appearance): string {
+    return this.appearanceNotifications ? appearanceReport(appearance) : "";
+  }
+
+  process(chunk: string, appearance: Appearance): Filtered {
     const data = this.carry + chunk;
     this.carry = "";
 
@@ -65,6 +79,24 @@ export class TerminalQueryFilter {
 
       text += data.slice(i, next);
       const rest = data.slice(next);
+
+      if (rest.startsWith(APPEARANCE_QUERY)) {
+        reply += appearanceReport(appearance);
+        i = next + APPEARANCE_QUERY.length;
+        continue;
+      }
+
+      if (rest.startsWith(ENABLE_APPEARANCE_NOTIFICATIONS)) {
+        this.appearanceNotifications = true;
+        i = next + ENABLE_APPEARANCE_NOTIFICATIONS.length;
+        continue;
+      }
+
+      if (rest.startsWith(DISABLE_APPEARANCE_NOTIFICATIONS)) {
+        this.appearanceNotifications = false;
+        i = next + DISABLE_APPEARANCE_NOTIFICATIONS.length;
+        continue;
+      }
 
       const capability = CAPABILITY_QUERY.exec(rest);
       if (capability) {
@@ -103,4 +135,8 @@ export class TerminalQueryFilter {
 
     return { text, reply };
   }
+}
+
+function appearanceReport(appearance: Appearance): string {
+  return `${ESC}[?997;${appearance === "dark" ? "1" : "2"}n`;
 }

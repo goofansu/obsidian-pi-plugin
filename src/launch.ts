@@ -86,9 +86,6 @@ export type SpawnSpec = {
   env: Record<string, string>;
 };
 
-/** Obsidian's current mode, which selects Pi's matching built-in theme. */
-export type Appearance = "light" | "dark";
-
 export type LaunchContext = {
   vaultRoot: string;
   /** The vault's name as Obsidian shows it, which is what Pi is told. */
@@ -96,18 +93,16 @@ export type LaunchContext = {
   /** The plugin's private Pi configuration directory. */
   agentDir: string;
   settings: Settings;
-  appearance: Appearance;
   processEnv: NodeJS.ProcessEnv;
 };
 
 export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
   const args = [
     ...PI_ARGS,
-    // Pi picks a theme by probing the terminal's background colour, which this
-    // emulator does not answer, so it would always assume dark. Naming the
-    // theme keeps it in step with Obsidian instead.
+    // Pi uses terminal appearance reports to select from this pair at startup
+    // and whenever Obsidian's appearance changes.
     "--use-theme",
-    ctx.appearance,
+    "light/dark",
     "--model",
     modelPattern(ctx.settings.model),
     // Both models, so they can be cycled from inside the session.

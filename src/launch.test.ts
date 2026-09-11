@@ -26,14 +26,12 @@ const SETTINGS: Settings = {
 const resolve = (
   processEnv: NodeJS.ProcessEnv = {},
   settings: Settings = SETTINGS,
-  appearance: "light" | "dark" = "dark",
 ) =>
   resolveLaunch({
     vaultRoot: VAULT,
     vaultName: VAULT_NAME,
     agentDir: AGENT_DIR,
     settings,
-    appearance,
     processEnv,
   });
 
@@ -65,14 +63,11 @@ describe("resolveLaunch — command and arguments", () => {
     expect(resolve().args).toContain("--no-skills");
   });
 
-  it.each(["light", "dark"] as const)(
-    "asks pi for the %s theme, matching Obsidian",
-    (appearance) => {
-      const args = resolve({}, SETTINGS, appearance).args;
+  it("asks Pi to select automatically between its light and dark themes", () => {
+    const args = resolve().args;
 
-      expect(args[args.indexOf("--use-theme") + 1]).toBe(appearance);
-    },
-  );
+    expect(args[args.indexOf("--use-theme") + 1]).toBe("light/dark");
+  });
 
   it("selects the configured model, and offers both for cycling", () => {
     const args = resolve({}, { ...SETTINGS, model: "deepseek-v4-pro" }).args;

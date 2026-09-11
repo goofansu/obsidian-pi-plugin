@@ -1,9 +1,13 @@
 import { accessSync, constants, mkdirSync } from "node:fs";
 import { WTerm } from "@wterm/dom";
 import type { IPty } from "node-pty";
-import { FileSystemAdapter, ItemView, type WorkspaceLeaf } from "obsidian";
 import {
-  type Appearance,
+  type EventRef,
+  FileSystemAdapter,
+  ItemView,
+  type WorkspaceLeaf,
+} from "obsidian";
+import {
   agentDirPath,
   candidatePaths,
   nodePtyPath,
@@ -11,7 +15,7 @@ import {
 } from "./launch.js";
 import { bracketedPaste } from "./paste.js";
 import type { Settings } from "./settings.js";
-import { TerminalQueryFilter } from "./terminal-queries.js";
+import { type Appearance, TerminalQueryFilter } from "./terminal-queries.js";
 
 export const TERMINAL_VIEW_TYPE = "pi-agent";
 
@@ -43,6 +47,8 @@ export class TerminalView extends ItemView {
   private term: WTerm | null = null;
   private process: IPty | null = null;
   private subscriptions: Subscription[] = [];
+  private appearanceEvent: EventRef | null = null;
+  private appearance: Appearance = "light";
   private started = false;
   private queries = new TerminalQueryFilter();
   private host: HTMLElement | null = null;
@@ -84,6 +90,10 @@ export class TerminalView extends ItemView {
   override async onOpen(): Promise<void> {
     const host = this.contentEl.createDiv({ cls: "pi-terminal" });
     this.host = host;
+    this.appearance = obsidianAppearance(host);
+    this.appearanceEvent = this.app.workspace.on("css-change", () =>
+      this.handleAppearanceChange(),
+    );
 
     // The callbacks are supplied up front so the terminal never handles input
     // on its own while there is no process to send it to.
@@ -207,6 +217,10 @@ export class TerminalView extends ItemView {
     this.focusTimer = null;
     this.pendingPaste = null;
     this.disposeSubscriptions();
+    if (this.appearanceEvent) {
+      this.app.workspace.offref(this.appearanceEvent);
+      this.appearanceEvent = null;
+    }
     this.process?.kill();
     this.process = null;
     this.term?.destroy();
@@ -310,6 +324,18 @@ export class TerminalView extends ItemView {
     this.subscriptions = [];
   }
 
+  private handleAppearanceChange(): void {
+    const appearance = obsidianAppearance(this.containerEl);
+    if (appearance === this.appearance) return;
+
+    this.appearance = appearance;
+    const proc = this.process;
+    if (!proc) return;
+
+    const report = this.queries.appearanceChanged(appearance);
+    if (report) proc.write(report);
+  }
+
   private handleInput(data: string): void {
     if (!this.started) {
       // Only reachable after a failure or a non-zero exit: the keystroke
@@ -396,7 +422,6 @@ export class TerminalView extends ItemView {
       vaultName: this.app.vault.getName(),
       agentDir,
       settings,
-      appearance: obsidianAppearance(this.containerEl),
       processEnv: process.env,
     });
 
@@ -429,11 +454,19 @@ export class TerminalView extends ItemView {
       return;
     }
 
+    // Subscription state belongs to this process and must not survive a
+    // restart in the same view.
+    this.queries = new TerminalQueryFilter();
+    this.process = proc;
+
     this.subscriptions.push(
       proc.onData((data) => {
         // Filtered before display: some queries the core cannot handle would
         // otherwise be printed as text, and some need an answer.
-        const { text, reply } = this.queries.process(data);
+        const { text, reply } = this.queries.process(
+          data,
+          obsidianAppearance(this.containerEl),
+        );
         if (text) {
           term.write(text);
           this.syncAltScreen(term);
@@ -444,16 +477,11 @@ export class TerminalView extends ItemView {
       proc.onExit(({ exitCode }) => this.handleExit(exitCode)),
     );
 
-    this.queries = new TerminalQueryFilter();
-    this.process = proc;
     term.focus();
   }
 }
 
-/**
- * Read at spawn time from the document Obsidian marks with its current mode.
- * Switching theme affects sessions started afterwards, not running ones.
- */
+/** Read from the document Obsidian marks with its current mode. */
 function obsidianAppearance(el: HTMLElement): Appearance {
   return el.ownerDocument.body.classList.contains("theme-dark")
     ? "dark"

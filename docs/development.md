@@ -145,20 +145,24 @@ The setting turns it off for sessions started from then on. It defaults to on.
 
 ## Theme
 
-Pi is started with its own `light` or `dark` theme to match Obsidian's current
-mode. Pi normally chooses by asking the terminal for its background colour; this
-emulator does not answer that, so without being told it would always assume dark.
-The mode is read when a session starts, so switching Obsidian's theme applies to
-panes opened afterwards, not to running ones. That limit is Pi's: it detects
-appearance only at startup, and rewriting its theme file mid-session was measured
-to have no effect, even after `/reload`. Restart a pane to change its theme.
+Pi is started with the automatic built-in pair `--use-theme light/dark`. The
+terminal-query filter bridges Pi's appearance protocol to Obsidian: it answers
+`CSI ? 996 n` with the current light or dark mode, tracks `CSI ? 2031 h` and
+`CSI ? 2031 l` notification subscription, and hides those unsupported sequences
+from wterm. Each process gets fresh filter state.
+
+Each terminal view observes Obsidian CSS changes. On a real light/dark transition
+it asks the filter for a report and writes one only when Pi subscribed and the
+view still has a live PTY. A running Pi therefore repaints its 24-bit interface
+colours in both directions without restarting. The observer is disposed with the
+view.
 
 The sixteen ANSI colours are handled separately by the stylesheet. The palette
 there is Pi's own, copied from its built-in `dark.json` and `light.json`
 themes, so Pi looks here as it does in a terminal. Obsidian's light or dark mode
-picks which one applies, switching with no restart. The background stays
-Obsidian's — Pi's themes set none, inheriting the terminal's — so the pane blends
-with the app. The monospace font and size follow Obsidian too.
+picks which one applies. The background stays Obsidian's — Pi's themes set none,
+inheriting the terminal's — so the pane blends with the app. The monospace font
+and size follow Obsidian too.
 
 If Pi's themes change upstream, they are at
 `dist/modes/interactive/theme/{dark,light}.json` in the installed package.
@@ -249,19 +253,22 @@ hand, because the rest needs a real Obsidian and Electron runtime.
     still of the note you were last reading, not of nothing.
 13. Press `Cmd+Shift+>` with no session running: Pi starts and the description
     arrives once its interface has settled, rather than being lost.
-14. Drag a live pane into the main editor area: the session continues.
-15. Close a pane mid-response: `ps` shows no orphaned process.
-16. Restart Obsidian: the tab is in the sidebar and empty, with no `pi` process
+14. With Pi still running, switch Obsidian from light to dark and then back to
+    light. Pi's interface repaints after each transition without the pane or
+    process restarting; its background and ANSI colours continue to match.
+15. Drag a live pane into the main editor area: the session continues.
+16. Close a pane mid-response: `ps` shows no orphaned process.
+17. Restart Obsidian: the tab is in the sidebar and empty, with no `pi` process
     running. Select it: Pi starts.
-17. Quit Pi with `Ctrl+D`: the pane empties and the tab stays. Click it: a fresh
+18. Quit Pi with `Ctrl+D`: the pane empties and the tab stays. Click it: a fresh
     session starts.
-18. Give the pane the keyboard three ways and type immediately each time,
+19. Give the pane the keyboard three ways and type immediately each time,
     without clicking again: select its tab from a note, click the idle pane to
     start a session, and press the toggle-focus key. The first two are the ones
     that broke before — Obsidian ends activating a pane by asking the view for
     the keyboard, and a press that starts a session repaints the screen out
     from under its own click.
-19. Unzip a release archive into a vault on a machine with no checkout of this
+20. Unzip a release archive into a vault on a machine with no checkout of this
     repository, and start a session. This is the one check the packaging script
     cannot make for itself: it verifies the archive's contents and modes, not
     that Obsidian's Electron can load the addon out of it.

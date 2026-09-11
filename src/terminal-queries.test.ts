@@ -7,8 +7,60 @@ import {
 
 const run = (...chunks: string[]) => {
   const filter = new TerminalQueryFilter();
-  return chunks.map((chunk) => filter.process(chunk));
+  return chunks.map((chunk) => filter.process(chunk, "dark"));
 };
+
+const CSI = "\x1b[";
+
+describe("appearance queries", () => {
+  it.each([
+    ["dark", `${CSI}?997;1n`],
+    ["light", `${CSI}?997;2n`],
+  ] as const)("reports the current %s appearance", (appearance, expected) => {
+    const filter = new TerminalQueryFilter();
+
+    expect(filter.process(`${CSI}?996n`, appearance)).toEqual({
+      text: "",
+      reply: expected,
+    });
+  });
+
+  it("reports appearance changes only between notification enable and disable", () => {
+    const filter = new TerminalQueryFilter();
+
+    expect(filter.appearanceChanged("light")).toBe("");
+    expect(filter.process(`${CSI}?2031h`, "dark")).toEqual({
+      text: "",
+      reply: "",
+    });
+    expect(filter.appearanceChanged("light")).toBe(`${CSI}?997;2n`);
+    expect(filter.appearanceChanged("dark")).toBe(`${CSI}?997;1n`);
+    expect(filter.process(`${CSI}?2031l`, "dark")).toEqual({
+      text: "",
+      reply: "",
+    });
+    expect(filter.appearanceChanged("light")).toBe("");
+  });
+
+  it("handles fragmented queries and mode changes without leaking text", () => {
+    const filter = new TerminalQueryFilter();
+
+    expect(filter.process(`${CSI}?9`, "light")).toEqual({
+      text: "",
+      reply: "",
+    });
+    expect(filter.process("96n", "light")).toEqual({
+      text: "",
+      reply: `${CSI}?997;2n`,
+    });
+    expect(filter.process(`${CSI}?20`, "light").text).toBe("");
+    expect(filter.process("31h", "light").text).toBe("");
+    expect(filter.appearanceChanged("dark")).toBe(`${CSI}?997;1n`);
+    expect(filter.process(`${CSI}?2031`, "dark").text).toBe("");
+    expect(filter.process("l", "dark").text).toBe("");
+    expect(filter.appearanceChanged("light")).toBe("");
+  });
+});
 
 describe("device attribute queries", () => {
   it.each([
@@ -93,14 +145,14 @@ describe("everything else passes through", () => {
 
   it("does not grow its buffer without bound on long output", () => {
     const filter = new TerminalQueryFilter();
-    for (let i = 0; i < 500; i++) filter.process("x".repeat(1000));
+    for (let i = 0; i < 500; i++) filter.process("x".repeat(1000), "dark");
 
     expect(filter.pending).toBe(0);
   });
 
   it("does not hold back an over-long fragment for ever", () => {
     const filter = new TerminalQueryFilter();
-    filter.process(`\x1bP+q${"a".repeat(400)}`);
+    filter.process(`\x1bP+q${"a".repeat(400)}`, "dark");
 
     expect(filter.pending).toBeLessThanOrEqual(256);
   });

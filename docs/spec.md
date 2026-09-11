@@ -182,7 +182,7 @@ Closing the pane kills the process.
 ### Shape
 
 One Obsidian plugin, desktop-only: six pure modules (a launch resolver, a
-settings model, a paste builder, a device attribute responder, the composer for
+settings model, a paste builder, a terminal-query filter, the composer for
 the note in view, and the composer for the vault every session runs in), one
 thin reader of Obsidian's metadata cache, a terminal
 view, and an entry point registering two commands, the view type, and a settings
@@ -212,7 +212,6 @@ resolveLaunch(ctx: {
   vaultRoot: string;
   agentDir: string;
   settings: Settings;
-  appearance: "light" | "dark";
   processEnv: NodeJS.ProcessEnv;
   noteContext: string | null;
 }): SpawnSpec;
@@ -254,12 +253,10 @@ Rules the resolver encodes:
   a tool away silently rather than fail. Verified against pi 0.84.4.
 - The configured model is passed as `--model provider/id`, and both models are
   passed as `--models` so they can be cycled inside a session.
-- `--use-theme` names Pi's own `light` or `dark` theme, matching Obsidian's
-  current mode. This is per session by necessity, not by choice — see below. Pi otherwise picks a theme by probing the terminal for its
-  background colour, a query this emulator does not answer, so it would always
-  assume dark and draw a dark interface on a light vault. The appearance is read
-  when the process starts, so switching Obsidian's theme affects sessions started
-  afterwards rather than running ones.
+- `--use-theme light/dark` gives Pi its automatic built-in theme pair. The
+  terminal-query adapter answers Pi's current-appearance query and forwards later
+  Obsidian appearance transitions, so the launch resolver needs no fixed
+  appearance input and a running session can switch either way.
 - One `--append-system-prompt` argument naming the vault and stating that its
   root is the working directory. Nothing about any note: the note the user is
   reading reaches Pi when they press the key for it, as a paste into Pi's
@@ -422,7 +419,7 @@ terminal, in that order.
 
 ### Answering, and hiding, terminal queries the emulator does not handle
 
-The wterm core does not handle two kinds of query that programs routinely send,
+The wterm core does not handle several queries that programs routinely send,
 and each fails differently.
 
 Device attribute queries (`CSI c`, `CSI > c`) are consumed but never answered.
@@ -437,10 +434,20 @@ measured — which appeared as a line of `+q436f+q6b75…` rubbish across the pa
 These are removed from the stream as well as answered, each capability reported
 unsupported so the program falls back to its terminfo entry instead of waiting.
 
+Pi's appearance protocol also needs an adapter. `CSI ? 996 n` asks for the
+current appearance and receives `CSI ? 997;1n` for dark or `CSI ? 997;2n` for
+light. `CSI ? 2031 h` enables appearance-change reports and `CSI ? 2031 l`
+disables them. Each filter owns that subscription state, so a replacement
+process starts unsubscribed. The view observes Obsidian's `css-change` event,
+recognises only real light/dark transitions, and writes a generated report only
+to a current live PTY while that process is subscribed. The observer is removed
+with the view.
+
 One module therefore filters everything arriving from the process, returning what
 should reach the terminal and what should be written back. It is a small state
 machine because a query can be split across two reads, and a partial query is held
 back rather than printed — printing half of one is exactly the bug being fixed.
+Appearance queries and mode sequences are removed rather than reaching wterm.
 The buffer is bounded, so a stream that merely looks like a query cannot stall the
 pane.
 
@@ -689,33 +696,13 @@ normal half except where a real one exists; and the ends of the scale invert
 between themes, since black must sit near the background on dark and be the text
 tone on light, where a true bright white would vanish.
 
-This stylesheet governs only the sixteen ANSI colours. Pi draws its interface in
-24-bit colour from whichever theme it loaded, which the stylesheet cannot reach —
-so the matching `--use-theme` argument is what actually keeps Pi in step with
-Obsidian, and the palette here covers everything else.
-
-### Why the theme cannot follow Obsidian live
-
-A session started before the mode changed keeps the theme it started with. This
-was investigated rather than assumed.
-
-Pi detects terminal appearance exactly once, at startup, so it will not notice a
-change. It does watch its active theme file and reload it, which suggested a way
-round: write both palettes into one custom theme file inside the private config
-directory and rewrite it whenever Obsidian's mode changes. That was built and
-measured against a real Pi on a pseudo-terminal, using a deliberately
-unmistakable accent colour to see which palette was in force.
-
-The result: the custom theme file is picked up correctly at startup, whether named
-by `--use-theme` or saved as the theme setting. But rewriting it mid-session
-changed nothing — not after a forced full repaint, and not after `/reload`, which
-Pi documents as reloading themes. Pi 0.84.4 keeps the palette a session started
-with.
-
-The machinery was therefore removed rather than kept, since it bought nothing over
-naming the built-in theme, and a copy of Pi's palettes embedded here would only
-drift. Panes opened after a mode change match Obsidian; panes already open keep
-their colours until restarted.
+This stylesheet governs only the sixteen ANSI colours and background. Pi draws
+its interface in 24-bit colour from its active theme, which the stylesheet cannot
+reach. Pi is therefore launched with `--use-theme light/dark`, and the terminal
+adapter bridges its appearance query and notification protocol to Obsidian. When
+Obsidian changes mode, a subscribed running Pi receives the new appearance and
+repaints without restarting; the CSS palette changes independently in the same
+transition.
 
 ### Nothing is written to a configuration file
 
@@ -827,10 +814,12 @@ along with the rest of the code that needs a running Obsidian.
 A pure unit, no imports and no doubles. Coverage includes each device attribute
 form answered and left in the stream; each capability query removed from the
 stream and answered as unsupported; a batched capability query answered once per
-capability; both terminators accepted; surrounding output kept intact; queries of
-either kind split across two reads handled without printing half of one; ordinary
-text, colour and cursor sequences passed through untouched; a lone escape emitted
-rather than swallowed; and a bounded buffer.
+capability; both terminators accepted; dark and light appearance queries answered
+exactly; appearance notifications enabled and disabled without leaking protocol
+text; generated transitions returned only while subscribed; every supported
+query and mode handled across chunk boundaries; surrounding output kept intact;
+ordinary text, colour and cursor sequences passed through untouched; a lone
+escape emitted rather than swallowed; and a bounded buffer.
 
 ### What is verified by hand instead
 
@@ -848,7 +837,9 @@ note that was open, its section, and its backlinks; ask Pi to read a second
 vault note; drag a live pane into the main editor
 area and confirm the session continues; close a pane mid-response and confirm no
 orphaned process survives; restart Obsidian and confirm the restored panes are
-idle rather than running, then confirm activating one starts it; confirm the
+idle rather than running, then confirm activating one starts it; with one Pi
+session running, switch Obsidian from light to dark and back and confirm Pi's
+interface repaints both ways without the pane or process restarting; confirm the
 shell reaches a prompt at once and prints no device attribute warning.
 
 ### Prior art
