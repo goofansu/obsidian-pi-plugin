@@ -42,9 +42,19 @@ export const PI_ICON_SVG = [
 ].join("");
 
 type Subscription = { dispose(): void };
+type TerminalSize = { cols: number; rows: number };
+
+const INITIAL_TERMINAL_SIZE: TerminalSize = { cols: 1, rows: 1 };
 
 export class TerminalView extends ItemView {
   private term: WTerm | null = null;
+  private initializingTerm: WTerm | null = null;
+  private terminalInitialization: Promise<WTerm | null> | null = null;
+  private hostWait: {
+    observer: ResizeObserver;
+    resolve: (measurable: boolean) => void;
+  } | null = null;
+  private cancelTerminalMeasurement: (() => void) | null = null;
   private process: IPty | null = null;
   private subscriptions: Subscription[] = [];
   private appearanceEvent: EventRef | null = null;
@@ -58,6 +68,7 @@ export class TerminalView extends ItemView {
   private pendingPaste: string | null = null;
   private settleTimer: number | null = null;
   private focusTimer: number | null = null;
+  private disposed = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -65,6 +76,7 @@ export class TerminalView extends ItemView {
     private readonly pluginDir: string | undefined,
     /** Read at spawn time, so a key added in settings applies to the next start. */
     private readonly readSettings: () => Settings,
+    private readonly onOpenView: (view: TerminalView) => void,
     private readonly onDispose: (view: TerminalView) => void,
   ) {
     super(leaf);
@@ -88,6 +100,13 @@ export class TerminalView extends ItemView {
   }
 
   override async onOpen(): Promise<void> {
+    // Obsidian normally creates a new view after close, but keeping lifecycle
+    // state re-armable makes reopening the same instance safe as well.
+    this.disposed = false;
+    this.terminalInitialization = null;
+    this.onOpenView(this);
+    this.contentEl.empty();
+
     const host = this.contentEl.createDiv({ cls: "pi-terminal" });
     this.host = host;
     this.appearance = obsidianAppearance(host);
@@ -95,17 +114,11 @@ export class TerminalView extends ItemView {
       this.handleAppearanceChange(),
     );
 
-    // The callbacks are supplied up front so the terminal never handles input
-    // on its own while there is no process to send it to.
-    this.term = await new WTerm(host, {
-      autoResize: true,
-      onData: (data) => this.handleInput(data),
-      onResize: (cols, rows) => this.process?.resize(cols, rows),
-    }).init();
-
-    // After a failure the pane is idle; a click retries it.
+    // After a failure the pane is idle; a click retries it. Terminal creation
+    // is deferred until the host is laid out, because wterm cannot recover when
+    // its first auto-resize measurement happens while hidden.
     this.registerDomEvent(host, "mousedown", () => {
-      if (!this.started) this.start();
+      if (!this.started) void this.start();
       this.focusTerminal();
       this.focusTerminalAfterPress();
     });
@@ -118,8 +131,6 @@ export class TerminalView extends ItemView {
       this.focusTerminal();
     });
 
-    this.writeIdleTip();
-
     // A pane is never started by existing. It starts when it is activated —
     // by selecting its tab, or by a command revealing it — which covers both
     // the pane that sits waiting in the sidebar and the one a command opens.
@@ -129,7 +140,7 @@ export class TerminalView extends ItemView {
     this.app.workspace.onLayoutReady(() => {
       this.registerEvent(
         this.app.workspace.on("active-leaf-change", (leaf) => {
-          if (leaf === this.leaf && !this.started) this.start();
+          if (leaf === this.leaf && !this.started) void this.start();
         }),
       );
     });
@@ -139,9 +150,151 @@ export class TerminalView extends ItemView {
     this.dispose();
   }
 
+  /**
+   * Creates at most one terminal, and only once the host has real layout.
+   * Activation, focus, click, and paste all meet at this promise so none can
+   * race another terminal or process into existence.
+   */
+  private ensureTerminal(): Promise<WTerm | null> {
+    if (this.term) return Promise.resolve(this.term);
+    if (this.disposed) return Promise.resolve(null);
+
+    if (!this.terminalInitialization) {
+      this.terminalInitialization = this.initializeTerminal();
+    }
+    return this.terminalInitialization;
+  }
+
+  private async initializeTerminal(): Promise<WTerm | null> {
+    const host = this.host;
+    if (!host) return null;
+
+    while (!this.disposed && this.host === host) {
+      if (!(await this.waitForMeasurableHost(host))) return null;
+
+      let resolveMeasurement: (size: TerminalSize | null) => void = () => {};
+      const measurement = new Promise<TerminalSize | null>((resolve) => {
+        resolveMeasurement = resolve;
+      });
+      let settled = false;
+      let cancelMeasurement: () => void = () => {};
+      const settleMeasurement = (size: TerminalSize | null) => {
+        if (settled) return;
+        settled = true;
+        if (this.cancelTerminalMeasurement === cancelMeasurement) {
+          this.cancelTerminalMeasurement = null;
+        }
+        resolveMeasurement(size);
+      };
+      cancelMeasurement = () => settleMeasurement(null);
+      this.cancelTerminalMeasurement = cancelMeasurement;
+
+      // Starting from 1-by-1 makes every normal pane produce a public resize
+      // callback. That callback, not animation-frame timing, proves wterm has
+      // measured the host and replaced the sentinel dimensions. A genuinely
+      // 1-by-1 host intentionally remains pending until its geometry changes:
+      // there is no public signal that distinguishes it from an unmeasured one.
+      const candidate = new WTerm(host, {
+        ...INITIAL_TERMINAL_SIZE,
+        autoResize: true,
+        onData: (data) => this.handleInput(data),
+        onResize: (cols, rows) => {
+          settleMeasurement({ cols, rows });
+          this.process?.resize(cols, rows);
+        },
+      });
+      this.initializingTerm = candidate;
+
+      try {
+        await candidate.init();
+      } catch (error) {
+        cancelMeasurement();
+        this.discardCandidate(candidate);
+        if (!this.disposed && this.host === host) {
+          host.setText(`Could not initialize terminal: ${errorMessage(error)}`);
+        }
+        return null;
+      }
+
+      if (!this.isLiveCandidate(candidate, host)) {
+        cancelMeasurement();
+        this.discardCandidate(candidate);
+        return null;
+      }
+
+      // The host may have become hidden while wterm was loading its core. In
+      // that case wterm installed no resize observer, so discard this attempt
+      // and wait for a new positive-size notification before trying again.
+      if (!isMeasurableHost(host)) {
+        cancelMeasurement();
+        this.discardCandidate(candidate);
+        continue;
+      }
+
+      // ResizeObserver delivery follows requestAnimationFrame in this runtime;
+      // only wterm's onResize callback above is evidence that cols/rows are real.
+      const measuredSize = await measurement;
+      if (!measuredSize || !this.isLiveCandidate(candidate, host)) {
+        this.discardCandidate(candidate);
+        return null;
+      }
+
+      this.initializingTerm = null;
+      this.term = candidate;
+      this.writeIdleTip();
+      return candidate;
+    }
+
+    return null;
+  }
+
+  private isLiveCandidate(candidate: WTerm, host: HTMLElement): boolean {
+    return (
+      !this.disposed &&
+      this.host === host &&
+      this.initializingTerm === candidate
+    );
+  }
+
+  private discardCandidate(candidate: WTerm): void {
+    candidate.destroy();
+    if (this.initializingTerm === candidate) this.initializingTerm = null;
+  }
+
+  private waitForMeasurableHost(host: HTMLElement): Promise<boolean> {
+    if (isMeasurableHost(host)) return Promise.resolve(true);
+    if (this.disposed || this.host !== host) return Promise.resolve(false);
+
+    return new Promise((resolve) => {
+      const observer = new ResizeObserver(() => {
+        if (this.hostWait?.observer !== observer) return;
+        if (this.disposed || this.host !== host) {
+          this.finishHostWait(false);
+        } else if (isMeasurableHost(host)) {
+          this.finishHostWait(true);
+        }
+      });
+      this.hostWait = { observer, resolve };
+      observer.observe(host);
+    });
+  }
+
+  private finishHostWait(measurable: boolean): void {
+    const wait = this.hostWait;
+    if (!wait) return;
+    this.hostWait = null;
+    wait.observer.disconnect();
+    wait.resolve(measurable);
+  }
+
   /** Gives the keyboard to the terminal. Safe to call before it exists. */
   focusTerminal(): void {
-    this.term?.focus();
+    if (this.term) {
+      this.term.focus();
+      return;
+    }
+
+    void this.ensureTerminal().then((term) => term?.focus());
   }
 
   /**
@@ -199,7 +352,7 @@ export class TerminalView extends ItemView {
     }
 
     this.pendingPaste = payload;
-    if (!this.started) this.start();
+    if (!this.started) void this.start();
     return true;
   }
 
@@ -211,11 +364,16 @@ export class TerminalView extends ItemView {
 
   /** Called by the plugin on unload, so no process outlives the plugin. */
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     if (this.settleTimer !== null) window.clearTimeout(this.settleTimer);
     this.settleTimer = null;
     if (this.focusTimer !== null) window.clearTimeout(this.focusTimer);
     this.focusTimer = null;
     this.pendingPaste = null;
+    this.finishHostWait(false);
+    this.cancelTerminalMeasurement?.();
+    this.cancelTerminalMeasurement = null;
     this.disposeSubscriptions();
     if (this.appearanceEvent) {
       this.app.workspace.offref(this.appearanceEvent);
@@ -223,8 +381,11 @@ export class TerminalView extends ItemView {
     }
     this.process?.kill();
     this.process = null;
+    this.initializingTerm?.destroy();
+    this.initializingTerm = null;
     this.term?.destroy();
     this.term = null;
+    this.terminalInitialization = null;
     this.host = null;
     this.altScreen = false;
     this.mainScrollTop = 0;
@@ -340,7 +501,7 @@ export class TerminalView extends ItemView {
     if (!this.started) {
       // Only reachable after a failure or a non-zero exit: the keystroke
       // retries rather than being echoed into nothing.
-      this.start();
+      void this.start();
       return;
     }
     this.process?.write(data);
@@ -382,9 +543,13 @@ export class TerminalView extends ItemView {
     this.term?.write(`\r\n\x1b[31m[error] ${message}\x1b[0m\r\n`);
   }
 
-  private start(): void {
-    const term = this.term;
-    if (this.started || !term) return;
+  private async start(): Promise<void> {
+    if (this.started || this.disposed) return;
+
+    const term = await this.ensureTerminal();
+    // Every trigger shares terminal initialization. Once it resolves, the
+    // first continuation claims startup synchronously and all others stop.
+    if (this.started || this.disposed || !term || term !== this.term) return;
 
     const settings = this.readSettings();
     if (!settings.apiKey) {
@@ -510,6 +675,13 @@ function isExecutable(command: string, path: string): boolean {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** Public host geometry is the boundary wterm itself is allowed to measure. */
+function isMeasurableHost(host: HTMLElement): boolean {
+  if (!host.isConnected) return false;
+  const { width, height } = host.getBoundingClientRect();
+  return width > 0 && height > 0;
 }
 
 /**

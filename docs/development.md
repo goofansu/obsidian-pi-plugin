@@ -227,6 +227,43 @@ repository's history.
 Automated tests cover the pure modules only. Everything below is checked by
 hand, because the rest needs a real Obsidian and Electron runtime.
 
+### Fullscreen startup and sizing
+
+In a separate terminal, use
+`ps -axo pid=,command= | grep -- '--tui-mode fullscreen' | grep -v grep` when a
+step asks for the Pi process count.
+
+1. **Fresh pane:** close the Pi pane, run **Toggle focus**, and wait for Pi. Its
+   transcript fills the pane and its editor/footer touches the bottom edge. The
+   process command contains exactly one `--tui-mode fullscreen` pair.
+2. **Restored inactive pane:** leave the Pi tab in the sidebar, select another
+   sidebar tab, quit Obsidian, and reopen it. Before selecting Pi, the process
+   command above prints no row. Select Pi; exactly one row appears, and the
+   editor/footer reaches the bottom rather than stopping at a 24-row boundary.
+3. **Horizontal and vertical resize:** press `Ctrl+G` in Pi to open `vi`, run
+   `:!stty size`, and note its rows and columns. Press Enter, resize the pane in
+   each direction, and run `:!stty size` again. Both reported values change in
+   the corresponding direction and the fullscreen display redraws to every
+   edge.
+4. **Move to the main area:** drag the running Pi tab from the sidebar into the
+   main editor area, then run `:!stty size` in `vi` again. The existing process
+   remains the sole process, reports the main area's dimensions, and fills the
+   larger host without restarting.
+5. **Paste-triggered startup:** quit Pi with `Ctrl+D`, return to a note, and run
+   **Add the note you are reading to thread**. Exactly one Pi process starts;
+   after its UI settles, one unsent bracketed paste appears in Pi's editor with
+   the cursor after it and no missing or duplicated text.
+6. **Close during initialization:** with Pi stopped, trigger **Toggle focus** and
+   immediately close its pane before the terminal appears. After waiting two
+   seconds, the process command prints no row and no terminal is attached to a
+   reopened/restored pane from that discarded view.
+7. **Nested alternate screen:** in fullscreen Pi, press `Ctrl+G`, type text in
+   `vi`, then leave with `Esc`, `:q!`, Enter. `vi` fills the pane while open;
+   after it closes, Pi's fullscreen transcript/editor return at the same size,
+   with no stale main-screen scrollback drawn over either screen.
+
+### General regression checklist
+
 1. With the right sidebar collapsed, run **Open terminal**: the sidebar expands
    and the pane has focus.
 2. The prompt appears immediately, with no "could not read response to Primary

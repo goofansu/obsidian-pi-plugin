@@ -63,6 +63,26 @@ describe("resolveLaunch — command and arguments", () => {
     expect(resolve().args).toContain("--no-skills");
   });
 
+  it("forces fullscreen TUI mode on every launch", () => {
+    const configured = resolve().args;
+    const unconfigured = resolve({}, DEFAULT_SETTINGS).args;
+
+    expect(
+      configured.slice(
+        configured.indexOf("--tui-mode"),
+        configured.indexOf("--tui-mode") + 2,
+      ),
+    ).toEqual(["--tui-mode", "fullscreen"]);
+    expect(configured.filter((arg) => arg === "--tui-mode")).toHaveLength(1);
+    expect(
+      unconfigured.slice(
+        unconfigured.indexOf("--tui-mode"),
+        unconfigured.indexOf("--tui-mode") + 2,
+      ),
+    ).toEqual(["--tui-mode", "fullscreen"]);
+    expect(unconfigured.filter((arg) => arg === "--tui-mode")).toHaveLength(1);
+  });
+
   it("asks Pi to select automatically between its light and dark themes", () => {
     const args = resolve().args;
 

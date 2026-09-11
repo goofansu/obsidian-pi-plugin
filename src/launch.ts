@@ -99,6 +99,9 @@ export type LaunchContext = {
 export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
   const args = [
     ...PI_ARGS,
+    // Fullscreen is launch policy rather than saved Pi or plugin preference.
+    "--tui-mode",
+    "fullscreen",
     // Pi uses terminal appearance reports to select from this pair at startup
     // and whenever Obsidian's appearance changes.
     "--use-theme",

@@ -36,6 +36,7 @@ export default class PiPlugin extends Plugin {
         leaf,
         this.manifest.dir,
         () => this.settings,
+        (v: TerminalView) => this.views.add(v),
         (v: TerminalView) => this.views.delete(v),
       );
       this.views.add(view);
