@@ -43,8 +43,10 @@ a shell would only be a second thing to maintain.
 Pi runs self-contained. It uses a configuration directory belonging to this
 plugin, not the user's own installation, so the extensions, skills, credentials,
 sessions, and trust decisions of the system-wide Pi have no effect here and are
-never modified. The agent is configured from Obsidian's settings: a DeepSeek API
-key, and a choice between two models.
+never modified. Vault-specific skills are the deliberate exception: only the
+vault-root `.pi/skills` directory is opted into explicitly. The agent is
+configured from Obsidian's settings: a DeepSeek API key, and a choice between two
+models.
 
 Both commands expand the sidebar if it is collapsed and focus the new pane, so
 the terminal is ready to type into. Panes stack as sidebar tabs, so a shell and
@@ -160,7 +162,7 @@ Closing the pane kills the process.
 48. As a vault owner, I want a DeepSeek key that happens to be in my environment ignored too, so that the plugin either uses the key I configured or fails clearly.
 49. As a vault owner, I want the vault trusted on every launch, so that no trust prompt or warning ever appears.
 49c. As a vault owner, I want trust handled without writing to my own Pi's configuration, so that this plugin never alters decisions I made elsewhere.
-49b. As a vault owner, I want no skills loaded at all, so that skills written for my own Pi setup do not change how the agent behaves here.
+49b. As a vault owner, I want only skills from the vault-root `.pi/skills` loaded, so that vault-specific capabilities are available without skills from my own Pi setup changing how the agent behaves here.
 50. As a vault owner, I want Pi's startup update checks and telemetry disabled, so that opening a pane does not chatter over the network.
 
 ### Safety
@@ -210,13 +212,12 @@ type SpawnSpec = {
 
 resolveLaunch(ctx: {
   vaultRoot: string;
+  vaultName: string;
   agentDir: string;
+  vaultSkillsDirectoryExists: boolean;
   settings: Settings;
   processEnv: NodeJS.ProcessEnv;
-  noteContext: string | null;
 }): SpawnSpec;
-
-parseAutostart(state: unknown): boolean;
 ```
 
 Rules the resolver encodes:
@@ -235,11 +236,16 @@ Rules the resolver encodes:
   The developer weighed the trade and accepted it: the vault holds the
   developer's own notes, and a trusted project may load `.pi` resources and run
   project extensions. `--no-skills` still applies, so trusting the vault does not
-  bring skills back.
+  restore automatic skill discovery.
 - `--no-skills` is always passed. The private config directory cannot cover this
   on its own: skills are also discovered from `~/.agents/skills` and from
   `.agents/skills` in the working directory and its parents, and neither path
-  moves with `PI_CODING_AGENT_DIR`. A flag is the only way to be sure none load.
+  moves with `PI_CODING_AGENT_DIR`. Pi keeps explicit `--skill` paths additive
+  under `--no-skills`, so the plugin passes the vault-root `.pi/skills` directory
+  as its sole explicit skill location when that directory exists. The spawning
+  adapter checks the filesystem and supplies that fact to the pure resolver; if
+  the directory is absent the argument is omitted, avoiding Pi's missing
+  explicit skill-path diagnostic without creating anything in the vault.
 - `--tools` names the six tools the agent may use — `read`, `grep`, `find`,
   `ls`, `edit`, and `write` — and by naming them, withholds every other. An
   allowlist rather than `--exclude-tools`, so a tool a later Pi adds is off
@@ -291,7 +297,7 @@ Rules the resolver encodes:
   set only from the plugin's settings, so an ambient key can never silently stand
   in for a missing one. When no key is configured the variable is absent entirely.
 - A restored pane persists no state at all: the view's saved state is empty, so
-  there is nothing that can be malformed, and `parseAutostart` is total.
+  there is nothing that can be malformed.
 
 Executable names are module-level constants, resolved through the `PATH` the
 process is given. That `PATH` is the application's own, with the user's
@@ -732,8 +738,10 @@ the emulator.
 The launch resolver is the primary automated test target. It is pure, has no
 Obsidian or PTY imports, and can be exercised with plain unit tests and no test
 doubles at all — which is precisely why it was chosen as the seam. Coverage
-includes: Pi run by absolute path; the trust and skills flags present on every
-launch and the opposite trust flag never present; the configured model selected
+includes: Pi resolved through its supplied `PATH`; the trust and
+skill-discovery flags present on every launch, the vault-root skill directory
+explicitly loaded only when it exists, and the opposite trust flag never
+present; the configured model selected
 and both offered for cycling; the theme named; the vault root as working
 directory; the key in the environment variable Pi reads and never on the command
 line; no key variable when none is configured; an inherited key dropped; every

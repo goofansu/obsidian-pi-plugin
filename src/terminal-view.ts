@@ -1,4 +1,4 @@
-import { accessSync, constants, mkdirSync } from "node:fs";
+import { accessSync, constants, mkdirSync, statSync } from "node:fs";
 import { WTerm } from "@wterm/dom";
 import type { IPty } from "node-pty";
 import {
@@ -12,6 +12,7 @@ import {
   candidatePaths,
   nodePtyPath,
   resolveLaunch,
+  vaultSkillsPath,
 } from "./launch.js";
 import { bracketedPaste } from "./paste.js";
 import type { Settings } from "./settings.js";
@@ -586,6 +587,7 @@ export class TerminalView extends ItemView {
       vaultRoot,
       vaultName: this.app.vault.getName(),
       agentDir,
+      vaultSkillsDirectoryExists: isDirectory(vaultSkillsPath(vaultRoot)),
       settings,
       processEnv: process.env,
     });
@@ -659,6 +661,15 @@ function vaultRootOf(view: ItemView): string {
     throw new Error("Pi requires a filesystem-backed vault");
   }
   return adapter.getBasePath();
+}
+
+/** A missing optional directory is ordinary, not a startup error. */
+function isDirectory(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 /** Whether a command can actually be run, given the PATH it will be run with. */

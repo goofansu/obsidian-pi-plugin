@@ -51,3 +51,11 @@ Settings → Community plugins → Pi:
 - **DeepSeek API key** — required. A pane opened without one says so and waits.
 - **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
   sessions started from then on; both can be cycled inside a running session.
+
+## Vault skills
+
+Put vault-specific skills in `<Vault>/.pi/skills`. The plugin loads that directory
+explicitly when it exists, while continuing to disable Pi's automatic skill
+discovery, so global, user, and other project skill locations are ignored. If the
+directory does not exist, it is simply omitted and Pi starts without a missing-path
+diagnostic.

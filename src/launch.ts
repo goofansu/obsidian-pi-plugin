@@ -39,11 +39,11 @@ export const PATH_APPEND = ["/usr/bin", "/bin"];
  * `/trust` look broken: it ignores project-local files whatever decision was
  * saved, so a decision saved in one session was overridden by the next launch.
  *
- * `--no-skills` disables skill loading outright, which the private config
+ * `--no-skills` disables automatic skill discovery, which the private config
  * directory alone cannot do: skills are also discovered from `~/.agents/skills`
- * and from `.agents/skills` in the working directory and its parents, none of
- * which move with `PI_CODING_AGENT_DIR`. It still applies to a trusted project,
- * so trusting the vault does not bring skills back.
+ * and from `.agents/skills` in the working directory and its parents. Explicit
+ * `--skill` arguments remain additive, so the launch can load the vault-root
+ * `.pi/skills` without bringing any other skills back.
  */
 export const PI_ARGS = ["--approve", "--no-skills"];
 
@@ -92,6 +92,8 @@ export type LaunchContext = {
   vaultName: string;
   /** The plugin's private Pi configuration directory. */
   agentDir: string;
+  /** Filesystem fact supplied by the spawning adapter; the resolver stays pure. */
+  vaultSkillsDirectoryExists: boolean;
   settings: Settings;
   processEnv: NodeJS.ProcessEnv;
 };
@@ -99,6 +101,12 @@ export type LaunchContext = {
 export function resolveLaunch(ctx: LaunchContext): SpawnSpec {
   const args = [
     ...PI_ARGS,
+    // `--no-skills` blocks discovery; this is the sole skill location opted in.
+    // A missing explicit path makes Pi print a diagnostic, so omit it unless
+    // the spawning adapter observed an actual directory.
+    ...(ctx.vaultSkillsDirectoryExists
+      ? ["--skill", vaultSkillsPath(ctx.vaultRoot)]
+      : []),
     // Fullscreen is launch policy rather than saved Pi or plugin preference.
     "--tui-mode",
     "fullscreen",
@@ -195,6 +203,11 @@ export function nodePtyPath(
 ): string {
   if (!pluginDir) return "node-pty";
   return `${vaultRoot}/${pluginDir}/node_modules/node-pty`;
+}
+
+/** The vault-owned skills directory explicitly enabled for this plugin's Pi. */
+export function vaultSkillsPath(vaultRoot: string): string {
+  return `${vaultRoot}/.pi/skills`;
 }
 
 /** The plugin's private Pi configuration directory, inside the plugin folder. */

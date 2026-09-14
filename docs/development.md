@@ -68,19 +68,24 @@ launched from the Finder passes no `EDITOR` or `VISUAL`. Change `EDITOR_COMMAND`
 
 ## Self-contained agent
 
-This plugin's Pi does not share anything with a Pi you have installed yourself:
+This plugin's Pi does not share anything with a Pi you have installed yourself.
+The only skills it opts into are owned by the vault:
 
 - it uses its own configuration directory, `pi-agent/` inside the plugin folder,
-  so its credentials, sessions, extensions, skills, and trust decisions are
-  separate;
+  so its credentials, sessions, extensions, configured skills, and trust
+  decisions are separate;
 - every `PI_*` variable in the environment is dropped before it starts, along
   with any `DEEPSEEK_API_KEY`, so nothing ambient leaks in;
 - `--approve` trusts the vault on every launch, so no trust prompt appears and
   no decision is written anywhere — note that a trusted project may load `.pi`
   resources and run project extensions from inside the vault;
-- `--no-skills` disables skill loading entirely, which the separate
-  configuration directory cannot do on its own — skills are also discovered from
-  `~/.agents/skills` and from `.agents/skills` above the working directory;
+- `--no-skills` disables automatic skill discovery, which the separate
+  configuration directory cannot do on its own: Pi also discovers
+  `~/.agents/skills` and `.agents/skills` in the working directory and its
+  parents. When the vault-root `.pi/skills` directory exists, the plugin adds it
+  explicitly with `--skill`; all other skill locations remain disabled. The existence
+  check happens immediately before launch, so a vault without that directory
+  does not produce Pi's missing explicit skill-path diagnostic;
 - `PI_OFFLINE` suppresses update checks and telemetry, but not model requests.
 
 Your own `~/.pi` is never read or written by this plugin.

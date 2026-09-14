@@ -8,6 +8,7 @@ import {
   PI_COMMAND,
   PI_TOOLS,
   resolveLaunch,
+  vaultSkillsPath,
 } from "./launch.js";
 import { API_KEY_ENV, DEFAULT_SETTINGS, type Settings } from "./settings.js";
 import { composeVaultContext } from "./vault-context.js";
@@ -26,11 +27,13 @@ const SETTINGS: Settings = {
 const resolve = (
   processEnv: NodeJS.ProcessEnv = {},
   settings: Settings = SETTINGS,
+  vaultSkillsDirectoryExists = true,
 ) =>
   resolveLaunch({
     vaultRoot: VAULT,
     vaultName: VAULT_NAME,
     agentDir: AGENT_DIR,
+    vaultSkillsDirectoryExists,
     settings,
     processEnv,
   });
@@ -52,15 +55,23 @@ describe("resolveLaunch — command and arguments", () => {
     expect(resolve().args).not.toContain("--no-approve");
   });
 
-  it("keeps skills off even though the project is trusted", () => {
+  it("disables skill discovery even though the project is trusted", () => {
     expect(resolve().args).toContain("--no-skills");
   });
 
-  it("loads no skills on every launch", () => {
-    // The private config directory cannot cover this: skills also come from
-    // ~/.agents/skills and from .agents/skills above the working directory.
-    expect(resolve().args).toContain("--no-skills");
-    expect(resolve().args).toContain("--no-skills");
+  it("explicitly loads only the vault-root .pi/skills directory", () => {
+    const args = resolve().args;
+
+    expect(args.filter((arg) => arg === "--skill")).toHaveLength(1);
+    expect(args[args.indexOf("--skill") + 1]).toBe(`${VAULT}/.pi/skills`);
+  });
+
+  it("does not pass a missing vault skill directory to Pi", () => {
+    const args = resolve({}, SETTINGS, false).args;
+
+    expect(args).not.toContain("--skill");
+    expect(args).not.toContain("/Users/james/Vault/.pi/skills");
+    expect(args).toContain("--no-skills");
   });
 
   it("forces fullscreen TUI mode on every launch", () => {
@@ -363,7 +374,13 @@ describe("resolveLaunch — environment", () => {
   });
 });
 
-describe("locating plugin-relative paths", () => {
+describe("locating vault and plugin paths", () => {
+  it("keeps explicit skills in the vault's .pi directory", () => {
+    expect(vaultSkillsPath("/Users/james/Vault")).toBe(
+      "/Users/james/Vault/.pi/skills",
+    );
+  });
+
   it("builds the node-pty path from the vault root and the plugin folder", () => {
     expect(
       nodePtyPath("/Users/james/Vault", ".obsidian/plugins/obsidian-pi-plugin"),
