@@ -49,7 +49,7 @@ Settings → Community plugins → Pi:
   the answers are the directory holding node, and npm's prefix with `/bin`.
   A pane that cannot find `pi` says so and names this setting.
 - **DeepSeek API key** — required. A pane opened without one says so and waits.
-- **Model** — `deepseek-v4-flash` (default) or `deepseek-v4-pro`. Applies to
+- **Model** — `deepseek-flash` (default) or `deepseek-v4-pro`. Applies to
   sessions started from then on; both can be cycled inside a running session.
 
 ## Vault skills

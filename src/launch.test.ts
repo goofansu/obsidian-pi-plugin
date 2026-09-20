@@ -20,7 +20,7 @@ const AGENT_DIR =
 
 const SETTINGS: Settings = {
   apiKey: "sk-test",
-  model: "deepseek-v4-flash",
+  model: "deepseek-flash",
   pathDirs: "",
 };
 
@@ -105,7 +105,7 @@ describe("resolveLaunch — command and arguments", () => {
 
     expect(args[args.indexOf("--model") + 1]).toBe("deepseek/deepseek-v4-pro");
     expect(args[args.indexOf("--models") + 1]).toBe(
-      "deepseek/deepseek-v4-flash,deepseek/deepseek-v4-pro",
+      "deepseek/deepseek-flash,deepseek/deepseek-v4-pro",
     );
   });
 

@@ -12,7 +12,7 @@ import {
 describe("the two models on offer", () => {
   it("offers exactly the flash and pro models, flash first", () => {
     expect(MODELS.map((m) => m.id)).toEqual([
-      "deepseek-v4-flash",
+      "deepseek-flash",
       "deepseek-v4-pro",
     ]);
   });
@@ -22,7 +22,7 @@ describe("the two models on offer", () => {
   });
 
   it("defaults to flash", () => {
-    expect(DEFAULT_SETTINGS.model).toBe("deepseek-v4-flash");
+    expect(DEFAULT_SETTINGS.model).toBe("deepseek-flash");
   });
 
   it("starts with no key", () => {
@@ -47,7 +47,7 @@ describe("model patterns passed to pi", () => {
 
   it("offers both models for in-session cycling", () => {
     expect(modelCycleList()).toBe(
-      "deepseek/deepseek-v4-flash,deepseek/deepseek-v4-pro",
+      "deepseek/deepseek-flash,deepseek/deepseek-v4-pro",
     );
   });
 });

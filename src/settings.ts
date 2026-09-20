@@ -8,7 +8,7 @@ export const PROVIDER = "deepseek";
 export const API_KEY_ENV = "DEEPSEEK_API_KEY";
 
 export const MODELS = [
-  { id: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
+  { id: "deepseek-flash", name: "DeepSeek V4.1 Flash" },
   { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
 ] as const;
 
@@ -27,7 +27,7 @@ export type Settings = {
 
 export const DEFAULT_SETTINGS: Settings = {
   apiKey: "",
-  model: "deepseek-v4-flash",
+  model: "deepseek-flash",
   pathDirs: "",
 };
 
